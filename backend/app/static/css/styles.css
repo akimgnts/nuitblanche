@@ -1,0 +1,310 @@
+/*
+  Nuit Blanche — design system for the generated carousel.
+  Real fonts, logo and posters arrive later. Everything here uses
+  CSS variables and system fonts so those can be swapped without
+  touching the templates.
+*/
+
+:root {
+  --color-navy: #1b1a3a;
+  --color-navy-deep: #131230;
+  --color-cream: #f4e9da;
+  --color-lavender: #b9a6d9;
+  --color-pink: #e9c2d0;
+
+  --font-display: Georgia, "Times New Roman", serif; /* swap for the real editorial font later */
+  --font-body: -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  --slide-width: 1080px;
+  --slide-height: 1350px;
+  --slide-padding: 72px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: var(--slide-width);
+  height: var(--slide-height);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-cream);
+  background: var(--color-navy);
+}
+
+.slide {
+  width: var(--slide-width);
+  height: var(--slide-height);
+  padding: var(--slide-padding);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(circle at 15% 0%, var(--color-navy) 0%, var(--color-navy-deep) 70%);
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 22px;
+  color: var(--color-pink);
+  font-weight: 600;
+}
+
+/* ---------- Cover slide ---------- */
+
+.slide--cover {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cover__week {
+  font-family: var(--font-display);
+  font-size: 44px;
+  color: var(--color-lavender);
+}
+
+.cover__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cover__city {
+  font-family: var(--font-display);
+  font-size: 96px;
+  line-height: 1.05;
+  color: var(--color-cream);
+}
+
+.cover__period {
+  font-size: 30px;
+  color: var(--color-pink);
+}
+
+.cover__title {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 1.2;
+  color: var(--color-lavender);
+  max-width: 850px;
+}
+
+.cover__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.cover__brand-name {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--color-cream);
+}
+
+.cover__brand-tagline {
+  font-size: 20px;
+  color: var(--color-lavender);
+}
+
+/* ---------- Day / programme slides ---------- */
+
+.slide--day {
+  gap: 32px;
+}
+
+.day-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-header__name {
+  font-family: var(--font-display);
+  font-size: 64px;
+  color: var(--color-cream);
+  text-transform: capitalize;
+}
+
+.day-header__date {
+  font-size: 24px;
+  color: var(--color-pink);
+}
+
+.day-grid {
+  display: grid;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.day-grid--spacious {
+  grid-template-columns: 1fr;
+}
+
+.day-grid--standard {
+  grid-template-columns: 1fr 1fr;
+}
+
+.day-grid--compact {
+  grid-template-columns: 1fr 1fr;
+}
+
+.event-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(244, 233, 218, 0.06);
+  border: 1px solid rgba(185, 166, 217, 0.35);
+  border-radius: 18px;
+  padding: 20px;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.day-grid--spacious .event-card__poster {
+  width: 220px;
+  height: 220px;
+}
+
+.day-grid--spacious .event-card__title {
+  font-size: 34px;
+  -webkit-line-clamp: 3;
+}
+
+.event-card__description {
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--color-cream);
+  opacity: 0.8;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.event-card--featured {
+  border-color: var(--color-pink);
+  background: rgba(233, 194, 208, 0.14);
+}
+
+.event-card__poster {
+  flex-shrink: 0;
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-navy-deep);
+}
+
+.day-grid--compact .event-card__poster {
+  width: 88px;
+  height: 88px;
+}
+
+.event-card__poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.event-card__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.event-card__category {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-pink);
+}
+
+.event-card__title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--color-cream);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.day-grid--compact .event-card__title {
+  font-size: 21px;
+  -webkit-line-clamp: 2;
+}
+
+.event-card__artist {
+  font-size: 17px;
+  color: var(--color-lavender);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 15px;
+  color: var(--color-cream);
+  opacity: 0.85;
+}
+
+.event-card__meta span::before {
+  content: "· ";
+  opacity: 0.6;
+}
+
+.event-card__meta span:first-child::before {
+  content: "";
+}
+
+.day-footer {
+  font-size: 18px;
+  color: var(--color-lavender);
+  opacity: 0.8;
+}
+
+/* ---------- Outro slide ---------- */
+
+.slide--outro {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 28px;
+}
+
+.outro__message {
+  font-family: var(--font-display);
+  font-size: 52px;
+  line-height: 1.3;
+  color: var(--color-cream);
+  max-width: 820px;
+}
+
+.outro__brand {
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--color-lavender);
+}
+
+.outro__cta {
+  font-size: 24px;
+  color: var(--color-pink);
+}

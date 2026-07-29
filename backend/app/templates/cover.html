@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="eyebrow">Semaine {{ week_number }}</div>
+  <div class="cover__body">
+    <div class="cover__week">Programme de la semaine</div>
+    <div class="cover__city">{{ city }}</div>
+    <div class="cover__period">{{ period_label }}</div>
+    <div class="cover__title">{{ headline }}</div>
+  </div>
+  <div class="cover__brand">
+    <span class="cover__brand-name">Nuit Blanche</span>
+    <span class="cover__brand-tagline">Le Havre &amp; sa région</span>
+  </div>
+{% endblock %}

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+backend/.venv/
+
+# Environment
+.env
+backend/.env
+
+# Generated carousel output (local storage)
+backend/generated/*
+!backend/generated/.gitkeep
+
+# Test / tool artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+
+# OS
+.DS_Store
