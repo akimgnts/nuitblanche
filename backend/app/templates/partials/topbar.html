@@ -1,0 +1,14 @@
+<div class="topbar">
+  {% if topbar_variant == "section" %}
+    <div class="section-label">Récap<span>Les sorties de la semaine</span></div>
+  {% else %}
+    <div class="week"><strong>{{ week_number }}</strong><span>Semaine</span></div>
+  {% endif %}
+  <div class="brand">
+    <div class="brand-mark">nb</div>
+    <div>
+      <div class="brand-name">NUIT BLANCHE</div>
+      <div class="brand-city">{{ city }}</div>
+    </div>
+  </div>
+</div>

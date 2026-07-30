@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="outro__message">{{ closing_message }}</div>
-  <div class="outro__brand">Nuit Blanche</div>
-  <div class="outro__cta">{{ call_to_action }}</div>
+  {% include "partials/topbar.html" %}
+  <div class="end">
+    <div class="end-mark">nb</div>
+    <div class="end-small">À la semaine prochaine</div>
+    <div class="end-title">{{ closing_headline }} <span class="accent">{{ closing_headline_accent }}</span></div>
+    <div class="end-text">{{ closing_text }}</div>
+    <div class="end-cta">{{ instagram_handle }}</div>
+  </div>
+  <div class="page">{{ page_label }}</div>
 {% endblock %}

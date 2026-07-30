@@ -56,6 +56,9 @@ class WeekRequest(BaseModel):
     start_date: Date
     end_date: Date
     events: list[EventIn] = Field(..., max_length=MAX_EVENTS_PER_REQUEST)
+    instagram_handle: str | None = Field(
+        default=None, max_length=100, description="Shown on the closing slide; defaults to @nuitblanche.<city>."
+    )
 
     @field_validator("end_date")
     @classmethod

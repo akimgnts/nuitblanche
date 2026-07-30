@@ -12,11 +12,12 @@ from datetime import date as Date
 from datetime import time as Time
 
 from app.schemas.events import EventIn
-from app.services.text_utils import placeholder_poster_data_uri, truncate_text
+from app.services.text_utils import placeholder_color, truncate_text
 
 TITLE_DISPLAY_MAX_LENGTH = 60
 ARTIST_DISPLAY_MAX_LENGTH = 50
 DESCRIPTION_DISPLAY_MAX_LENGTH = 140
+POSTER_LABEL_MAX_LENGTH = 34
 NO_PRICE_LABEL = "Tarif non communiqué"
 
 
@@ -35,8 +36,9 @@ class NormalizedEvent:
     description: str | None
     description_display: str | None
     price_display: str
-    poster_src: str
-    has_real_poster: bool
+    poster_url: str | None
+    placeholder_color: str
+    poster_label: str
     featured: bool
 
 
@@ -57,8 +59,9 @@ def normalize_event(event: EventIn) -> NormalizedEvent:
             truncate_text(event.description, DESCRIPTION_DISPLAY_MAX_LENGTH) if event.description else None
         ),
         price_display=event.price.strip() if event.price and event.price.strip() else NO_PRICE_LABEL,
-        poster_src=event.poster_url or placeholder_poster_data_uri(event.category),
-        has_real_poster=bool(event.poster_url),
+        poster_url=event.poster_url,
+        placeholder_color=placeholder_color(event.category),
+        poster_label=truncate_text(event.title, POSTER_LABEL_MAX_LENGTH),
         featured=event.featured,
     )
 

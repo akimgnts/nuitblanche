@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="eyebrow">Semaine {{ week_number }}</div>
-  <div class="cover__body">
-    <div class="cover__week">Programme de la semaine</div>
-    <div class="cover__city">{{ city }}</div>
-    <div class="cover__period">{{ period_label }}</div>
-    <div class="cover__title">{{ headline }}</div>
+  {% include "partials/topbar.html" %}
+  <div class="cover">
+    <div class="kicker">Programmation</div>
+    <div class="cover-copy">
+      <span class="small">{{ headline_line1 }}</span>
+      <span class="big">{{ headline_line2 }}</span>
+      <span class="city">{{ headline_line3 }}</span>
+    </div>
+    <div class="cover-bottom">
+      <div class="date-range">{{ period_label }}</div>
+      <div class="tags">
+        {% for tag in category_tags %}<span>{{ tag }}</span>{% endfor %}
+      </div>
+    </div>
   </div>
-  <div class="cover__brand">
-    <span class="cover__brand-name">Nuit Blanche</span>
-    <span class="cover__brand-tagline">Le Havre &amp; sa région</span>
-  </div>
+  <div class="swipe">Swipe pour découvrir →</div>
 {% endblock %}

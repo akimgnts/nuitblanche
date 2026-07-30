@@ -6,7 +6,9 @@ paginate -> render -> screenshot -> post-process -> zip -> store.
 
 from __future__ import annotations
 
+import re
 import tempfile
+import unicodedata
 import uuid
 from datetime import date as Date
 from datetime import time as Time
@@ -37,13 +39,21 @@ _FRENCH_MONTHS = (
     "juillet", "août", "septembre", "octobre", "novembre", "décembre",
 )
 
+MAX_COVER_TAGS = 4
 
-def _format_date(day: Date) -> str:
+
+def _format_day_month(day: Date) -> str:
     return f"{day.day} {_FRENCH_MONTHS[day.month - 1]}"
 
 
+def _format_full_date(day: Date) -> str:
+    return f"{_format_day_month(day)} {day.year}"
+
+
 def _format_period_label(start_date: Date, end_date: Date) -> str:
-    return f"Du {_format_date(start_date)} au {_format_date(end_date)} {end_date.year}"
+    if start_date.month == end_date.month and start_date.year == end_date.year:
+        return f"Du {start_date.day} au {end_date.day} {_FRENCH_MONTHS[end_date.month - 1]} {end_date.year}"
+    return f"Du {_format_day_month(start_date)} au {_format_full_date(end_date)}"
 
 
 def _format_hm(value: Time) -> str:
@@ -61,6 +71,25 @@ def _format_time_label(event: NormalizedEvent) -> str | None:
     return label
 
 
+def _category_tags(events: list[NormalizedEvent], limit: int = MAX_COVER_TAGS) -> list[str]:
+    """Unique categories in order of first appearance, capped for the cover's tag row."""
+    seen: dict[str, None] = {}
+    for event in events:
+        seen.setdefault(event.category, None)
+    return list(seen.keys())[:limit]
+
+
+def _default_instagram_handle(city: str) -> str:
+    normalized = unicodedata.normalize("NFKD", city).encode("ascii", "ignore").decode("ascii")
+    compact = re.sub(r"[^a-zA-Z0-9]", "", normalized).lower()
+    return f"@nuitblanche.{compact}"
+
+
+def _featured_first(events: list[NormalizedEvent]) -> list[NormalizedEvent]:
+    """Display-only reorder: featured events lead the slide, like the reference design."""
+    return sorted(events, key=lambda event: not event.featured)
+
+
 def _event_to_context(event: NormalizedEvent) -> dict[str, object]:
     return {
         "title_display": event.title_display,
@@ -69,49 +98,61 @@ def _event_to_context(event: NormalizedEvent) -> dict[str, object]:
         "venue": event.venue,
         "category": event.category,
         "price_display": event.price_display,
-        "poster_src": event.poster_src,
+        "poster_url": event.poster_url,
+        "placeholder_color": event.placeholder_color,
+        "poster_label": event.poster_label,
         "featured": event.featured,
         "start_time_label": _format_time_label(event),
     }
 
 
-def _render_cover(request: WeekRequest) -> str:
+def _render_cover(request: WeekRequest, normalized_events: list[NormalizedEvent]) -> str:
     return render_slide(
         "cover.html",
         {
             "slide_type": "cover",
+            "topbar_variant": "week",
             "week_number": request.week_number,
             "city": request.city,
             "period_label": _format_period_label(request.start_date, request.end_date),
-            "headline": "Le programme culturel de la semaine",
+            "headline_line1": "C'est quoi les plans",
+            "headline_line2": "cette semaine",
+            "headline_line3": f"à {request.city} ?",
+            "category_tags": _category_tags(normalized_events),
         },
     )
 
 
-def _render_day(request: WeekRequest, slide: DaySlide) -> str:
+def _render_day(request: WeekRequest, slide: DaySlide, page_label: str) -> str:
     return render_slide(
         "day.html",
         {
             "slide_type": "day",
+            "topbar_variant": "section",
             "week_number": request.week_number,
             "city": request.city,
             "day_name": weekday_name(slide.day),
-            "day_date_label": _format_date(slide.day),
+            "day_date_label": _format_full_date(slide.day),
             "template": slide.template,
-            "page_number": slide.page_number,
-            "page_count": slide.page_count,
-            "events": [_event_to_context(event) for event in slide.events],
+            "events": [_event_to_context(event) for event in _featured_first(slide.events)],
+            "page_label": page_label,
         },
     )
 
 
-def _render_outro() -> str:
+def _render_outro(request: WeekRequest, page_label: str) -> str:
     return render_slide(
         "outro.html",
         {
             "slide_type": "outro",
-            "closing_message": "C'était le programme de la semaine.",
-            "call_to_action": "Abonnez-vous pour ne rien manquer du prochain épisode.",
+            "topbar_variant": "week",
+            "week_number": request.week_number,
+            "city": request.city,
+            "closing_headline": "Trouve ton prochain",
+            "closing_headline_accent": f"plan à {request.city}.",
+            "closing_text": "Concerts, expositions, spectacles et sorties sélectionnés chaque semaine.",
+            "instagram_handle": request.instagram_handle or _default_instagram_handle(request.city),
+            "page_label": page_label,
         },
     )
 
@@ -150,18 +191,20 @@ class GenerationService:
 
             with ScreenshotRenderer(width, height, self._settings.chromium_executable_path) as screenshot:
                 cover_path = tmp_dir / cover_filename()
-                screenshot.capture(_render_cover(request), cover_path)
+                screenshot.capture(_render_cover(request, normalized), cover_path)
                 finalize_png(cover_path, width, height)
                 png_paths.append(cover_path)
 
                 for index, slide in enumerate(day_slides, start=2):
+                    page_label = f"{index:02d} / {total_slides:02d}"
                     slide_path = tmp_dir / day_slide_filename(index, slide)
-                    screenshot.capture(_render_day(request, slide), slide_path)
+                    screenshot.capture(_render_day(request, slide, page_label), slide_path)
                     finalize_png(slide_path, width, height)
                     png_paths.append(slide_path)
 
+                outro_page_label = f"{total_slides:02d} / {total_slides:02d}"
                 outro_path = tmp_dir / outro_filename(total_slides)
-                screenshot.capture(_render_outro(), outro_path)
+                screenshot.capture(_render_outro(request, outro_page_label), outro_path)
                 finalize_png(outro_path, width, height)
                 png_paths.append(outro_path)
 

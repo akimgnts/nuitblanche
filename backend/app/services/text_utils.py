@@ -7,10 +7,21 @@ untouched, so re-rendering or exporting raw data later is always safe.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 
-_PALETTE = ["#2C2A4A", "#4B3F72", "#6B5B95", "#B98EAD", "#8C7AA9"]
+# Muted jewel tones matching the reference design's poster placeholders.
+_PALETTE = [
+    "#4d375f",
+    "#2f6271",
+    "#81506f",
+    "#543d67",
+    "#8e5337",
+    "#a86c37",
+    "#433e46",
+    "#3a5565",
+    "#725f56",
+    "#9a4160",
+]
 
 
 def truncate_text(text: str, max_length: int, *, ellipsis: str = "…") -> str:
@@ -23,26 +34,10 @@ def truncate_text(text: str, max_length: int, *, ellipsis: str = "…") -> str:
 
 
 def placeholder_color(seed: str) -> str:
-    """Deterministic color from the design palette, derived from a seed string."""
+    """Deterministic color from the design palette, derived from a seed string.
+
+    Used as the poster background when no real affiche is available yet.
+    """
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
     index = int(digest[:8], 16) % len(_PALETTE)
     return _PALETTE[index]
-
-
-def placeholder_poster_data_uri(category: str) -> str:
-    """Inline SVG placeholder poster, used when no real affiche is provided.
-
-    Returned as a base64 data: URI so Playwright renders it with zero
-    network calls and zero extra files.
-    """
-    color = placeholder_color(category)
-    initial = (category.strip()[:1] or "?").upper()
-    svg = (
-        '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">'
-        f'<rect width="100%" height="100%" fill="{color}"/>'
-        '<text x="50%" y="50%" font-size="160" font-family="Georgia, serif" '
-        f'fill="#F4E9DA" text-anchor="middle" dominant-baseline="central">{initial}</text>'
-        "</svg>"
-    )
-    encoded = base64.b64encode(svg.encode("utf-8")).decode("ascii")
-    return f"data:image/svg+xml;base64,{encoded}"
