@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import date as Date
 from datetime import time as Time
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MAX_TITLE_LENGTH = 300
 MAX_EVENTS_PER_REQUEST = 500
@@ -20,20 +20,22 @@ MAX_EVENTS_PER_REQUEST = 500
 class EventIn(BaseModel):
     """A single event, matching the Google Sheet contract structure."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     id: str = Field(..., min_length=1, max_length=200, description="Event ID from sheet (EVT-0001, etc)")
     date: Date
     venue: str = Field(..., min_length=1, max_length=200)
-    venue_id: str | None = Field(default=None, max_length=50, description="Location identifier (CAI, COS, etc)")
+    venue_id: str | None = Field(default=None, alias="venueId", max_length=50, description="Location identifier (CAI, COS, etc)")
     type: str = Field(..., min_length=1, max_length=100, description="Event category/type")
-    event_name: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH)
+    event_name: str = Field(..., alias="eventName", min_length=1, max_length=MAX_TITLE_LENGTH)
     artists: str | None = Field(default=None, max_length=500, description="Artists, DJ, or performers")
-    start_time: Time | None = None
-    end_time: Time | None = None
+    start_time: Time | None = Field(default=None, alias="startTime")
+    end_time: Time | None = Field(default=None, alias="endTime")
     price: str | None = Field(default=None, max_length=100)
-    visual_url: str | None = Field(default=None, max_length=2000, description="Poster image URL from Drive")
+    visual_url: str | None = Field(default=None, alias="visualUrl", max_length=2000, description="Poster image URL from Drive")
     featured: bool = False
     status: str | None = Field(default="Validé", max_length=50, description="Event status from sheet")
-    source_url: str | None = Field(default=None, max_length=2000, description="Instagram, ticketing, or source URL")
+    source_url: str | None = Field(default=None, alias="sourceUrl", max_length=2000, description="Instagram, ticketing, or source URL")
 
     @field_validator("id", "venue", "type", "event_name", mode="before")
     @classmethod
@@ -53,9 +55,11 @@ class EventIn(BaseModel):
 class Week(BaseModel):
     """Week descriptor from the Google Sheet calendar."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     label: str = Field(..., description="Human-readable label (Semaine 32 – du 03/08/2026 au 09/08/2026)")
-    start_date: Date
-    end_date: Date
+    start_date: Date = Field(..., alias="startDate")
+    end_date: Date = Field(..., alias="endDate")
 
     @field_validator("end_date")
     @classmethod
@@ -69,8 +73,10 @@ class Week(BaseModel):
 class GenerationOptions(BaseModel):
     """Options for carousel generation."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     statuses: list[str] = Field(default=["Validé"], description="Event statuses to include")
-    featured_first: bool = Field(default=True, description="Featured events appear first on slides")
+    featured_first: bool = Field(default=True, alias="featuredFirst", description="Featured events appear first on slides")
 
 
 class WeekRequest(BaseModel):
