@@ -25,17 +25,25 @@ def minimal_week_payload() -> dict[str, object]:
     return {
         "city": "Le Havre",
         "week_number": 29,
-        "start_date": "2026-07-16",
-        "end_date": "2026-07-22",
+        "week": {
+            "label": "Semaine 29 – du 16/07/2026 au 22/07/2026",
+            "start_date": "2026-07-16",
+            "end_date": "2026-07-22",
+        },
+        "options": {
+            "statuses": ["Validé"],
+            "featured_first": True,
+        },
         "events": [
             {
-                "external_id": "event-001",
+                "id": "EVT-0001",
                 "date": "2026-07-16",
                 "start_time": "20:00",
                 "venue": "3 Brasseurs",
-                "category": "Concert",
-                "title": "Concert variétés",
-                "artist": "Artiste invité",
+                "venue_id": "3BR",
+                "type": "Concert",
+                "event_name": "Concert variétés",
+                "artists": "Artiste invité",
             }
         ],
     }

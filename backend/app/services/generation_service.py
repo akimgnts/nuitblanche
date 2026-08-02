@@ -114,7 +114,7 @@ def _render_cover(request: WeekRequest, normalized_events: list[NormalizedEvent]
             "topbar_variant": "week",
             "week_number": request.week_number,
             "city": request.city,
-            "period_label": _format_period_label(request.start_date, request.end_date),
+            "period_label": _format_period_label(request.week.start_date, request.week.end_date),
             "headline_line1": "C'est quoi les plans",
             "headline_line2": "cette semaine",
             "headline_line3": f"à {request.city} ?",
@@ -214,7 +214,7 @@ class GenerationService:
             stored = self._storage.store(
                 city=request.city,
                 week_number=request.week_number,
-                year=request.start_date.year,
+                year=request.week.start_date.year,
                 png_paths=png_paths,
                 zip_path=zip_path,
             )

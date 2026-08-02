@@ -27,14 +27,20 @@ Exemple donné dans le brief initial :
 
 ```json
 {
-  "Date": "date",
-  "Horaire": "start_time",
-  "Lieu": "venue",
-  "Type": "category",
-  "Événement": "title",
-  "Artiste": "artist",
-  "Tarif": "price",
-  "Affiche": "poster_url"
+  "ID_EVENEMENT": "id",
+  "DATE": "date",
+  "HEURE_DEBUT": "start_time",
+  "HEURE_FIN": "end_time",
+  "LIEU": "venue",
+  "ID_LIEU": "venue_id",
+  "TYPE_EVENEMENT": "type",
+  "NOM_EVENEMENT": "event_name",
+  "ARTISTES_PROGRAMMATION": "artists",
+  "PRIX_FINAL": "price",
+  "VISUEL_DRIVE_URL": "visual_url",
+  "SOURCE_URL": "source_url",
+  "MISE_EN_AVANT": "featured",
+  "STATUT": "status"
 }
 ```
 
@@ -47,18 +53,20 @@ schéma Pydantic évolue.
 
 | Champ interne  | Obligatoire | Type attendu                        | Notes |
 |----------------|:-----------:|--------------------------------------|-------|
-| `external_id`  | non         | texte                                | Généré automatiquement (`<onglet>-row-<n>`) si absent du Sheet. Ajoutez une colonne dédiée si le Sheet a un identifiant stable (ex. numéro de ligne métier). |
+| `id`           | oui         | texte                                | Identifiant du Sheet (ex. `EVT-0001`). |
 | `date`         | oui         | date (`AAAA-MM-JJ`)                  | Si la colonne du Sheet est au format date natif, la conversion est automatique. |
 | `start_time`   | non         | heure (`HH:MM`)                      | Idem pour les colonnes heure natives. |
 | `end_time`     | non         | heure (`HH:MM`)                      | Absent si pas de colonne "Horaire fin". |
 | `venue`        | oui         | texte                                | Lieu de l'événement. |
-| `category`     | oui         | texte                                | Sert aussi à choisir la couleur du placeholder d'affiche. |
-| `title`        | oui         | texte                                | Titre affiché (raccourci automatiquement si trop long). |
-| `artist`       | non         | texte                                | |
-| `description`  | non         | texte                                | Actuellement affichée uniquement en densité `spacious`. |
-| `price`        | non         | texte libre (ex. `"12€"`, `"Gratuit"`) | Si absent : `"Tarif non communiqué"` sur le visuel. |
-| `poster_url`   | non         | URL                                  | Si absent : placeholder généré automatiquement. |
-| `featured`     | non         | booléen                              | `"oui"` / `"true"` / `"1"` / case cochée → `true`. |
+| `venue_id`     | non         | texte                                | Identifiant du lieu (ex. `CAI`, `COS`). |
+| `type`         | oui         | texte                                | Type d'événement. Sert aussi à choisir la couleur du placeholder d'affiche. |
+| `event_name`   | oui         | texte                                | Titre affiché (raccourci automatiquement si trop long). |
+| `artists`      | non         | texte                                | Artistes, DJ, groupes ou intervenants. |
+| `price`        | non         | texte libre (ex. `"12€"`, `"Gratuit"`) | Utiliser `PRIX_FINAL` du Sheet. Si absent : `"Tarif non communiqué"` sur le visuel. |
+| `visual_url`   | non         | URL                                  | URL de l'affiche sur Drive. Si absent : placeholder généré automatiquement. |
+| `source_url`   | non         | URL                                  | Instagram, billetterie ou site source (informatif, non affiché). |
+| `featured`     | non         | booléen                              | Priorité éditoriale (`MISE_EN_AVANT`). `"oui"` / `"true"` / `"1"` / case cochée → `true`. |
+| `status`       | non         | texte                                | Statut de l'événement (`Validé`, `Brouillon`, `À vérifier`). Apps Script filtre avant envoi. |
 
 ## Étapes concrètes à la réception du vrai Sheet
 

@@ -7,15 +7,15 @@ from app.services.normalizer import normalize_events
 from app.services.sorting import sort_events
 
 
-def _event(external_id: str, date: str, start_time: str | None, venue: str = "Venue") -> EventIn:
+def _event(event_id: str, date: str, start_time: str | None, venue: str = "Venue") -> EventIn:
     return EventIn.model_validate(
         {
-            "external_id": external_id,
+            "id": event_id,
             "date": date,
             "start_time": start_time,
             "venue": venue,
-            "category": "Concert",
-            "title": f"Title {external_id}",
+            "type": "Concert",
+            "event_name": f"Title {event_id}",
         }
     )
 

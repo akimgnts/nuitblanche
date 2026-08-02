@@ -16,11 +16,11 @@ def _events(count: int, day: str = "2026-07-16") -> list:
     raw = [
         EventIn.model_validate(
             {
-                "external_id": f"event-{i}",
+                "id": f"EVT-{i:04d}",
                 "date": day,
                 "venue": "Venue",
-                "category": "Concert",
-                "title": f"Title {i}",
+                "type": "Concert",
+                "event_name": f"Title {i}",
             }
         )
         for i in range(count)

@@ -10,14 +10,14 @@ from app.services.normalizer import normalize_events
 from app.services.sorting import sort_events
 
 
-def _event(external_id: str, day: str) -> EventIn:
+def _event(event_id: str, day: str) -> EventIn:
     return EventIn.model_validate(
         {
-            "external_id": external_id,
+            "id": event_id,
             "date": day,
             "venue": "Venue",
-            "category": "Concert",
-            "title": f"Title {external_id}",
+            "type": "Concert",
+            "event_name": f"Title {event_id}",
         }
     )
 

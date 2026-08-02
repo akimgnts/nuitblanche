@@ -18,29 +18,31 @@ MAX_EVENTS_PER_REQUEST = 500
 
 
 class EventIn(BaseModel):
-    """A single event row, as received from the Google Sheet export."""
+    """A single event, matching the Google Sheet contract structure."""
 
-    external_id: str = Field(..., min_length=1, max_length=200)
+    id: str = Field(..., min_length=1, max_length=200, description="Event ID from sheet (EVT-0001, etc)")
     date: Date
+    venue: str = Field(..., min_length=1, max_length=200)
+    venue_id: str | None = Field(default=None, max_length=50, description="Location identifier (CAI, COS, etc)")
+    type: str = Field(..., min_length=1, max_length=100, description="Event category/type")
+    event_name: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH)
+    artists: str | None = Field(default=None, max_length=500, description="Artists, DJ, or performers")
     start_time: Time | None = None
     end_time: Time | None = None
-    venue: str = Field(..., min_length=1, max_length=200)
-    category: str = Field(..., min_length=1, max_length=100)
-    title: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH)
-    artist: str | None = Field(default=None, max_length=200)
-    description: str | None = Field(default=None, max_length=1000)
     price: str | None = Field(default=None, max_length=100)
-    poster_url: str | None = Field(default=None, max_length=2000)
+    visual_url: str | None = Field(default=None, max_length=2000, description="Poster image URL from Drive")
     featured: bool = False
+    status: str | None = Field(default="Validé", max_length=50, description="Event status from sheet")
+    source_url: str | None = Field(default=None, max_length=2000, description="Instagram, ticketing, or source URL")
 
-    @field_validator("external_id", "venue", "category", "title", mode="before")
+    @field_validator("id", "venue", "type", "event_name", mode="before")
     @classmethod
     def _strip_required(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip()
         return value
 
-    @field_validator("artist", "description", "price", "poster_url", mode="before")
+    @field_validator("artists", "price", "visual_url", "source_url", mode="before")
     @classmethod
     def _blank_to_none(cls, value: object) -> object:
         if isinstance(value, str) and value.strip() == "":
@@ -48,17 +50,12 @@ class EventIn(BaseModel):
         return value
 
 
-class WeekRequest(BaseModel):
-    """The full payload for one carousel generation."""
+class Week(BaseModel):
+    """Week descriptor from the Google Sheet calendar."""
 
-    city: str = Field(..., min_length=1, max_length=120)
-    week_number: int = Field(..., ge=1, le=53)
+    label: str = Field(..., description="Human-readable label (Semaine 32 – du 03/08/2026 au 09/08/2026)")
     start_date: Date
     end_date: Date
-    events: list[EventIn] = Field(..., max_length=MAX_EVENTS_PER_REQUEST)
-    instagram_handle: str | None = Field(
-        default=None, max_length=100, description="Shown on the closing slide; defaults to @nuitblanche.<city>."
-    )
 
     @field_validator("end_date")
     @classmethod
@@ -67,3 +64,25 @@ class WeekRequest(BaseModel):
         if start_date is not None and end_date < start_date:
             raise ValueError("end_date must not be before start_date")
         return end_date
+
+
+class GenerationOptions(BaseModel):
+    """Options for carousel generation."""
+
+    statuses: list[str] = Field(default=["Validé"], description="Event statuses to include")
+    featured_first: bool = Field(default=True, description="Featured events appear first on slides")
+
+
+class WeekRequest(BaseModel):
+    """The full payload for carousel generation from Google Sheets."""
+
+    project: str = Field(default="nuit-blanche", max_length=100)
+    template: str = Field(default="nuit-blanche", max_length=100)
+    city: str = Field(..., min_length=1, max_length=120)
+    week_number: int = Field(..., ge=1, le=53)
+    week: Week
+    options: GenerationOptions = Field(default_factory=GenerationOptions)
+    events: list[EventIn] = Field(..., max_length=MAX_EVENTS_PER_REQUEST)
+    instagram_handle: str | None = Field(
+        default=None, max_length=100, description="Shown on the closing slide; defaults to @nuitblanche.<city>."
+    )

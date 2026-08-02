@@ -44,24 +44,22 @@ class NormalizedEvent:
 
 def normalize_event(event: EventIn) -> NormalizedEvent:
     return NormalizedEvent(
-        external_id=event.external_id,
+        external_id=event.id,
         date=event.date,
         start_time=event.start_time,
         end_time=event.end_time,
         venue=event.venue,
-        category=event.category,
-        title=event.title,
-        title_display=truncate_text(event.title, TITLE_DISPLAY_MAX_LENGTH),
-        artist=event.artist,
-        artist_display=(truncate_text(event.artist, ARTIST_DISPLAY_MAX_LENGTH) if event.artist else None),
-        description=event.description,
-        description_display=(
-            truncate_text(event.description, DESCRIPTION_DISPLAY_MAX_LENGTH) if event.description else None
-        ),
+        category=event.type,
+        title=event.event_name,
+        title_display=truncate_text(event.event_name, TITLE_DISPLAY_MAX_LENGTH),
+        artist=event.artists,
+        artist_display=(truncate_text(event.artists, ARTIST_DISPLAY_MAX_LENGTH) if event.artists else None),
+        description=None,
+        description_display=None,
         price_display=event.price.strip() if event.price and event.price.strip() else NO_PRICE_LABEL,
-        poster_url=event.poster_url,
-        placeholder_color=placeholder_color(event.category),
-        poster_label=truncate_text(event.title, POSTER_LABEL_MAX_LENGTH),
+        poster_url=event.visual_url,
+        placeholder_color=placeholder_color(event.type),
+        poster_label=truncate_text(event.event_name, POSTER_LABEL_MAX_LENGTH),
         featured=event.featured,
     )
 
