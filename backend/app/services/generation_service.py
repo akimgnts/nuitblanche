@@ -196,7 +196,11 @@ class GenerationService:
                 png_paths.append(cover_path)
 
                 for index, slide in enumerate(day_slides, start=2):
-                    page_label = f"{index:02d} / {total_slides:02d}"
+                    day_name = weekday_name(slide.day)
+                    if slide.page_count > 1:
+                        page_label = f"{day_name.capitalize()} {slide.page_number}/{slide.page_count}"
+                    else:
+                        page_label = day_name.capitalize()
                     slide_path = tmp_dir / day_slide_filename(index, slide)
                     screenshot.capture(_render_day(request, slide, page_label), slide_path)
                     finalize_png(slide_path, width, height)

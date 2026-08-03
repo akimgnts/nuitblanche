@@ -46,20 +46,47 @@ class DaySlide:
 
 
 def paginate_day(day: Date, events: list[NormalizedEvent]) -> list[DaySlide]:
-    """Split one day's events into slides no larger than MAX_EVENTS_PER_SLIDE."""
+    """
+    Split one day's events into slides following Instagram carousel rules:
+
+    - With featured event: 1 featured + up to 6 regular = 7 max per slide
+    - Without featured: up to 8 regular per slide
+    - Multiple featured events → separate slide for each
+    - After distributing featured, group remaining regular events by 8
+    """
     if not events:
         return []
-    chunks = [events[i : i + MAX_EVENTS_PER_SLIDE] for i in range(0, len(events), MAX_EVENTS_PER_SLIDE)]
-    page_count = len(chunks)
+
+    featured = [e for e in events if e.featured]
+    regular = [e for e in events if not e.featured]
+
+    slides_data = []
+
+    # Distribute featured events (each gets its own slide + up to 6 regular events)
+    for featured_event in featured:
+        companion_regular = regular[:6]
+        regular = regular[6:]
+        slide_events = [featured_event] + companion_regular
+        slides_data.append(slide_events)
+
+    # Distribute remaining regular events by chunks of 8
+    for i in range(0, len(regular), 8):
+        slides_data.append(regular[i : i + 8])
+
+    # If no slides were created (shouldn't happen, but safeguard)
+    if not slides_data:
+        return []
+
+    page_count = len(slides_data)
     return [
         DaySlide(
             day=day,
-            events=chunk,
-            template=estimate_density(len(chunk)),
+            events=slide_events,
+            template=estimate_density(len(slide_events)),
             page_number=page_number,
             page_count=page_count,
         )
-        for page_number, chunk in enumerate(chunks, start=1)
+        for page_number, slide_events in enumerate(slides_data, start=1)
     ]
 
 
