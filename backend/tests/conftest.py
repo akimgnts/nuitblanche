@@ -23,26 +23,27 @@ EXAMPLES_PATH = Path(__file__).resolve().parent.parent.parent / "examples" / "ev
 @pytest.fixture
 def minimal_week_payload() -> dict[str, object]:
     return {
-        "city": "Le Havre",
-        "week_number": 29,
+        "project": "nuit-blanche",
+        "template": "nuit-blanche",
         "week": {
             "label": "Semaine 29 – du 16/07/2026 au 22/07/2026",
-            "start_date": "2026-07-16",
-            "end_date": "2026-07-22",
+            "startDate": "2026-07-16",
+            "endDate": "2026-07-22",
         },
         "options": {
             "statuses": ["Validé"],
-            "featured_first": True,
+            "sort": ["date", "startTime", "venue"],
         },
         "events": [
             {
                 "id": "EVT-0001",
                 "date": "2026-07-16",
-                "start_time": "20:00",
+                "dateLabel": "Jeudi 16 juillet",
+                "startTime": "20:00",
                 "venue": "3 Brasseurs",
-                "venue_id": "3BR",
+                "venueId": "3BR",
                 "type": "Concert",
-                "event_name": "Concert variétés",
+                "eventName": "Concert variétés",
                 "artists": "Artiste invité",
             }
         ],

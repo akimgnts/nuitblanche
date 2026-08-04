@@ -1,10 +1,4 @@
-"""Input schema: the generic JSON contract the Python engine receives.
-
-This is intentionally decoupled from Google Sheets. Whatever reads the
-Sheet (Apps Script today, something else tomorrow) is responsible for
-producing this shape. See docs/GOOGLE_SHEET_MAPPING.md for the column
-mapping used to build it.
-"""
+"""Schemas for the Apps Script payload and the internal generation request."""
 
 from __future__ import annotations
 
@@ -18,33 +12,32 @@ MAX_EVENTS_PER_REQUEST = 500
 
 
 class EventIn(BaseModel):
-    """A single event, matching the Google Sheet contract structure."""
+    """Single event as sent by Apps Script."""
 
-    model_config = ConfigDict(populate_by_name=True)
-
-    id: str = Field(..., min_length=1, max_length=200, description="Event ID from sheet (EVT-0001, etc)")
+    id: str = Field(..., min_length=1, max_length=200)
     date: Date
+    date_label: str = Field(..., alias="dateLabel", min_length=1, max_length=120)
     venue: str = Field(..., min_length=1, max_length=200)
-    venue_id: str | None = Field(default=None, alias="venueId", max_length=50, description="Location identifier (CAI, COS, etc)")
-    type: str = Field(..., min_length=1, max_length=100, description="Event category/type")
+    venue_id: str | None = Field(default=None, alias="venueId", max_length=50)
+    type: str = Field(..., min_length=1, max_length=100)
     event_name: str = Field(..., alias="eventName", min_length=1, max_length=MAX_TITLE_LENGTH)
-    artists: str | None = Field(default=None, max_length=500, description="Artists, DJ, or performers")
+    artists: str | None = Field(default=None, max_length=500)
     start_time: Time | None = Field(default=None, alias="startTime")
     end_time: Time | None = Field(default=None, alias="endTime")
     price: str | None = Field(default=None, max_length=100)
-    visual_url: str | None = Field(default=None, alias="visualUrl", max_length=2000, description="Poster image URL from Drive")
+    visual_url: str | None = Field(default=None, alias="visualUrl", max_length=2000)
     featured: bool = False
-    status: str | None = Field(default="Validé", max_length=50, description="Event status from sheet")
-    source_url: str | None = Field(default=None, alias="sourceUrl", max_length=2000, description="Instagram, ticketing, or source URL")
+    status: str | None = Field(default=None, max_length=50)
+    source_url: str | None = Field(default=None, alias="sourceUrl", max_length=2000)
 
-    @field_validator("id", "venue", "type", "event_name", mode="before")
+    @field_validator("id", "date_label", "venue", "type", "event_name", mode="before")
     @classmethod
     def _strip_required(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip()
         return value
 
-    @field_validator("artists", "price", "visual_url", "source_url", mode="before")
+    @field_validator("artists", "price", "visual_url", "source_url", "venue_id", mode="before")
     @classmethod
     def _blank_to_none(cls, value: object) -> object:
         if isinstance(value, str) and value.strip() == "":
@@ -53,11 +46,9 @@ class EventIn(BaseModel):
 
 
 class Week(BaseModel):
-    """Week descriptor from the Google Sheet calendar."""
+    """Week descriptor as sent by Apps Script."""
 
-    model_config = ConfigDict(populate_by_name=True)
-
-    label: str = Field(..., description="Human-readable label (Semaine 32 – du 03/08/2026 au 09/08/2026)")
+    label: str = Field(..., min_length=1, max_length=200)
     start_date: Date = Field(..., alias="startDate")
     end_date: Date = Field(..., alias="endDate")
 
@@ -71,24 +62,32 @@ class Week(BaseModel):
 
 
 class GenerationOptions(BaseModel):
-    """Options for carousel generation."""
+    """Generation options preserved from Apps Script payload."""
 
-    model_config = ConfigDict(populate_by_name=True)
-
-    statuses: list[str] = Field(default=["Validé"], description="Event statuses to include")
-    featured_first: bool = Field(default=True, alias="featuredFirst", description="Featured events appear first on slides")
+    statuses: list[str] = Field(default_factory=list)
+    sort: list[str] = Field(default_factory=list)
 
 
 class WeekRequest(BaseModel):
-    """The full payload for carousel generation from Google Sheets."""
+    """Exact Apps Script payload accepted by the FastAPI route."""
 
-    project: str = Field(default="nuit-blanche", max_length=100)
-    template: str = Field(default="nuit-blanche", max_length=100)
+    model_config = ConfigDict(extra="forbid")
+
+    project: str = Field(..., min_length=1, max_length=100)
+    template: str = Field(..., min_length=1, max_length=100)
+    week: Week
+    options: GenerationOptions = Field(default_factory=GenerationOptions)
+    events: list[EventIn] = Field(..., max_length=MAX_EVENTS_PER_REQUEST)
+
+
+class GenerationRequest(BaseModel):
+    """Internal request consumed by the generation engine."""
+
+    project: str = Field(..., min_length=1, max_length=100)
+    template: str = Field(..., min_length=1, max_length=100)
     city: str = Field(..., min_length=1, max_length=120)
     week_number: int = Field(..., ge=1, le=53)
     week: Week
     options: GenerationOptions = Field(default_factory=GenerationOptions)
     events: list[EventIn] = Field(..., max_length=MAX_EVENTS_PER_REQUEST)
-    instagram_handle: str | None = Field(
-        default=None, max_length=100, description="Shown on the closing slide; defaults to @nuitblanche.<city>."
-    )
+    instagram_handle: str | None = Field(default=None, max_length=100)

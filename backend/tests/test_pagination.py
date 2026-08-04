@@ -20,9 +20,10 @@ def _events(count: int, day: str = "2026-07-16", featured_indices: list[int] | N
             {
                 "id": f"EVT-{i:04d}",
                 "date": day,
+                "dateLabel": "Jeudi 16 juillet",
                 "venue": "Venue",
                 "type": "Concert",
-                "event_name": f"Title {i}",
+                "eventName": f"Title {i}",
                 "featured": i in featured_indices,
             }
         )
@@ -66,76 +67,38 @@ def test_paginate_day_regular_16_events_splits_evenly() -> None:
     assert all(not slide.has_featured for slide in slides)
 
 
-# === Featured events ===
-
-def test_paginate_day_one_featured_only() -> None:
-    """1 featured event alone on a slide."""
-    slides = paginate_day(date(2026, 7, 16), _events(1, featured_indices=[0]))
-    assert len(slides) == 1
-    assert slides[0].has_featured
-    assert len(slides[0].events) == 1
-
-
-def test_paginate_day_one_featured_plus_6_regular() -> None:
-    """1 featured + 6 regular = 7 events, 1 slide."""
-    slides = paginate_day(date(2026, 7, 16), _events(7, featured_indices=[0]))
-    assert len(slides) == 1
-    assert len(slides[0].events) == 7
-    assert slides[0].has_featured
-    # Featured should be first in the slide
-    assert slides[0].events[0].featured
-
-
-def test_paginate_day_one_featured_plus_7_regular_creates_overflow() -> None:
-    """1 featured + 7 regular: featured + 6 on slide 1, 1 regular on slide 2."""
+def test_paginate_day_keeps_featured_inside_the_same_grid_rules() -> None:
+    """Featured events no longer create a special slide shape or reduced capacity."""
     slides = paginate_day(date(2026, 7, 16), _events(8, featured_indices=[0]))
-    assert len(slides) == 2
-    # Slide 1: featured + 6 regular
-    assert len(slides[0].events) == 7
+    assert len(slides) == 1
+    assert len(slides[0].events) == 8
     assert slides[0].has_featured
-    # Slide 2: remaining regular events
-    assert len(slides[1].events) == 1
-    assert not slides[1].has_featured
 
 
-def test_paginate_day_multiple_featured_same_day() -> None:
-    """Multiple featured events get separate slides."""
-    # 2 featured + 12 regular
+def test_paginate_day_multiple_featured_still_chunks_by_eight() -> None:
     slides = paginate_day(date(2026, 7, 16), _events(14, featured_indices=[0, 7]))
-    # Slide 1: featured[0] + 6 regular
-    # Slide 2: featured[1] + 6 regular
-    # But order might change, so check by counting slides with featured
-    featured_slides = [s for s in slides if s.has_featured]
-    assert len(featured_slides) == 2
-    # Each featured gets its own slide
-    for slide in featured_slides:
-        assert sum(1 for e in slide.events if e.featured) == 1
-
-
-def test_paginate_day_featured_plus_overflow() -> None:
-    """1 featured + 13 regular: featured + 6 on slide 1, 8 on slide 2, 1 on slide 3."""
-    slides = paginate_day(date(2026, 7, 16), _events(14, featured_indices=[0]))
-    assert len(slides) == 3
-    # Slide 1: featured + 6 regular = 7
-    assert len(slides[0].events) == 7
+    assert len(slides) == 2
+    assert [len(slide.events) for slide in slides] == [8, 6]
     assert slides[0].has_featured
-    # Slide 2: 8 regular
-    assert len(slides[1].events) == 8
     assert not slides[1].has_featured
-    # Slide 3: 1 regular
-    assert len(slides[2].events) == 1
-    assert not slides[2].has_featured
+
+
+def test_paginate_day_featured_plus_overflow_fills_first_page_to_eight() -> None:
+    """1 featured + 13 regular: 8 events on slide 1, 6 on slide 2."""
+    slides = paginate_day(date(2026, 7, 16), _events(14, featured_indices=[0]))
+    assert len(slides) == 2
+    assert len(slides[0].events) == 8
+    assert slides[0].has_featured
+    assert len(slides[1].events) == 6
+    assert not slides[1].has_featured
 
 
 def test_paginate_day_no_slide_exceeds_8_events_without_featured() -> None:
-    """Without featured, no slide should exceed 8 events."""
+    """No slide should exceed 8 events, featured or not."""
     for count in [8, 9, 15, 16, 20, 24, 25]:
         slides = paginate_day(date(2026, 7, 16), _events(count))
         for slide in slides:
-            if slide.has_featured:
-                assert len(slide.events) <= 7, f"Featured slide with {len(slide.events)} exceeds 7"
-            else:
-                assert len(slide.events) <= 8, f"Regular slide with {len(slide.events)} exceeds 8"
+            assert len(slide.events) <= 8, f"Slide with {len(slide.events)} exceeds 8"
 
 
 def test_paginate_day_page_numbering() -> None:

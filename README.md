@@ -236,8 +236,9 @@ l'URL publique obtenue.
 - `EVENTS_SHEET_NAME` et `COLUMN_MAPPING` dans
   `google-apps-script/SheetReader.gs` (voir
   `docs/GOOGLE_SHEET_MAPPING.md`).
-- Si plusieurs villes/onglets : adapter `readEventsFromSheet_()` et le
-  `week_number` calculé dans `ApiClient.gs`.
+- Si plusieurs villes/onglets : adapter `readEventsFromSheet_()`. Le
+  backend dérive désormais `week_number` depuis `week.startDate` en ISO et
+  injecte `city` depuis `NUIT_BLANCHE_CITY`.
 - Les vraies polices, le logo Nuit Blanche et les vraies affiches
   remplaceront les polices système et les placeholders générés
   (`app/static/css/styles.css`, `app/services/text_utils.py`).

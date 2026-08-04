@@ -12,10 +12,11 @@ def _event(event_id: str, date: str, start_time: str | None, venue: str = "Venue
         {
             "id": event_id,
             "date": date,
-            "start_time": start_time,
+            "dateLabel": "Jeudi 16 juillet",
+            "startTime": start_time,
             "venue": venue,
             "type": "Concert",
-            "event_name": f"Title {event_id}",
+            "eventName": f"Title {event_id}",
         }
     )
 

@@ -16,6 +16,7 @@ from app.models.generation import GenerationRepository
 from app.schemas.carousel import GenerationResponse, GenerationStatusResponse
 from app.schemas.events import WeekRequest
 from app.services.generation_service import GenerationService
+from app.services.payload_adapter import to_generation_request
 
 router = APIRouter(prefix="/api/v1/carousels", tags=["carousels"], dependencies=[Depends(verify_api_key)])
 
@@ -30,7 +31,8 @@ def generate_carousel(
     service: Annotated[GenerationService, Depends(get_generation_service)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> GenerationResponse:
-    future = _executor.submit(service.generate, request)
+    internal_request = to_generation_request(request, settings)
+    future = _executor.submit(service.generate, internal_request)
     try:
         record = future.result(timeout=settings.generation_timeout_seconds)
     except concurrent.futures.TimeoutError as exc:

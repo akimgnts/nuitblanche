@@ -34,42 +34,42 @@ Apps Script envoie exactement cette structure:
 {
   "project": "nuit-blanche",
   "template": "nuit-blanche",
-  "city": "Le Havre",
-  "week_number": 29,
   "week": {
     "label": "Semaine 29 – du 16/07/2026 au 22/07/2026",
-    "start_date": "2026-07-16",
-    "end_date": "2026-07-22"
+    "startDate": "2026-07-16",
+    "endDate": "2026-07-22"
   },
   "options": {
     "statuses": ["Validé"],
-    "featured_first": true
+    "sort": ["date", "startTime", "venue"]
   },
   "events": [
     {
       "id": "EVT-0001",
       "date": "2026-07-16",
+      "dateLabel": "Jeudi 16 juillet",
       "venue": "3 Brasseurs",
-      "venue_id": "3BR",
+      "venueId": "3BR",
       "type": "Concert",
-      "event_name": "Concert variétés",
+      "eventName": "Concert variétés",
       "artists": "Artiste invité",
-      "start_time": "20:00",
-      "end_time": "22:00",
+      "startTime": "20:00",
+      "endTime": "22:00",
       "price": "Consommation",
-      "visual_url": "https://drive.google.com/...",
+      "visualUrl": "https://drive.google.com/...",
       "featured": true,
       "status": "Validé",
-      "source_url": "https://instagram.com/..."
+      "sourceUrl": "https://instagram.com/..."
     }
-  ],
-  "instagram_handle": "@nuitblanche.lehavre"
+  ]
 }
 ```
 
 **Validation**: Pydantic valide structure + types.
 
-**Aliases**: Accepte `startDate`/`start_date`, `eventName`/`event_name`, etc.
+**Adaptation**: la route convertit ce payload externe vers un modèle interne unique.
+`city` est injectée depuis `NUIT_BLANCHE_CITY` (défaut `Le Havre`) et
+`week_number` est calculé en ISO depuis `week.startDate`.
 
 ### 2. Pipeline GenerationService
 
@@ -81,7 +81,7 @@ def generate(request: WeekRequest) -> GenerationRecord:
     
     # Étape 2: Tri
     sorted_events = sort_events(normalized)
-    # → featured_first=true + date + start_time
+    # → date + start_time
     
     # Étape 3: Groupement par jour
     grouped = group_by_day(sorted_events)
@@ -109,10 +109,10 @@ def generate(request: WeekRequest) -> GenerationRecord:
 
 ### 3. Normalisation (EventIn → NormalizedEvent)
 
-**EventIn** (schéma brut du Sheet):
-- `id`, `date`, `venue`, `type`, `event_name`, `artists`
-- `start_time`, `end_time`, `price`, `visual_url`
-- `featured`, `status`, `source_url`, `venue_id`
+**EventIn** (schéma brut Apps Script):
+- `id`, `date`, `dateLabel`, `venue`, `venueId`, `type`, `eventName`
+- `artists`, `startTime`, `endTime`, `price`, `visualUrl`
+- `featured`, `status`, `sourceUrl`
 
 **NormalizedEvent** (prêt pour rendu):
 ```python
@@ -310,8 +310,8 @@ end_date: Date                   # aliases: endDate
 
 ### GenerationOptions
 ```python
-statuses: list[str] = ["Validé"]
-featured_first: bool = True      # aliases: featuredFirst
+statuses: list[str]
+sort: list[str]
 ```
 
 ### WeekRequest
@@ -319,8 +319,18 @@ Payload complet envoyé par Apps Script:
 ```python
 project: str = "nuit-blanche"
 template: str = "nuit-blanche"
-city: str
-week_number: int
+week: Week
+options: GenerationOptions
+events: list[EventIn]
+```
+
+### GenerationRequest
+Modèle interne transmis au moteur existant:
+```python
+project: str
+template: str
+city: str                  # settings.city
+week_number: int           # ISO depuis week.startDate
 week: Week
 options: GenerationOptions
 events: list[EventIn]
@@ -348,7 +358,7 @@ Orchestrateur principal. Étapes:
 - Set price_display default
 
 ### Sorting
-Tri par: featured → date → time
+Tri par: date → time
 
 ### Grouping
 Groupement par jour (OrderedDict)
@@ -418,26 +428,27 @@ generated_dir: Path = Path("generated/")
 ```python
 # 1. Apps Script envoie
 request_json = {
-    "city": "Le Havre",
-    "week_number": 29,
+    "project": "nuit-blanche",
+    "template": "nuit-blanche",
     "week": {
         "label": "Semaine 29 – du 16/07/2026 au 22/07/2026",
-        "start_date": "2026-07-16",
-        "end_date": "2026-07-22"
+        "startDate": "2026-07-16",
+        "endDate": "2026-07-22"
     },
     "options": {
         "statuses": ["Validé"],
-        "featured_first": True
+        "sort": ["date", "startTime", "venue"]
     },
     "events": [
         {
             "id": "EVT-0001",
             "date": "2026-07-16",
+            "dateLabel": "Jeudi 16 juillet",
             "venue": "3 Brasseurs",
             "type": "Concert",
-            "event_name": "Concert variétés",
+            "eventName": "Concert variétés",
             "artists": "Artiste invité",
-            "start_time": "20:00",
+            "startTime": "20:00",
             "price": "Consommation",
             "featured": True,
             "status": "Validé"
@@ -445,8 +456,9 @@ request_json = {
     ]
 }
 
-# 2. Backend traite
-request = WeekRequest.model_validate(request_json)
+# 2. Backend adapte puis traite
+payload = WeekRequest.model_validate(request_json)
+request = to_generation_request(payload, settings)
 record = service.generate(request)
 
 # 3. Response

@@ -12,10 +12,11 @@ def _base_event(**overrides: object) -> dict[str, object]:
     event = {
         "id": "EVT-0001",
         "date": "2026-07-16",
-        "start_time": "20:00",
+        "dateLabel": "Jeudi 16 juillet",
+        "startTime": "20:00",
         "venue": "3 Brasseurs",
         "type": "Concert",
-        "event_name": "Concert variétés",
+        "eventName": "Concert variétés",
     }
     event.update(overrides)
     return event
@@ -41,24 +42,29 @@ def test_event_blank_optional_strings_become_none() -> None:
 
 
 def test_event_required_strings_are_stripped() -> None:
-    event = EventIn.model_validate(_base_event(event_name="  Concert variétés  "))
+    event = EventIn.model_validate(_base_event(eventName="  Concert variétés  "))
     assert event.event_name == "Concert variétés"
 
 
-def test_week_request_valid() -> None:
+def test_apps_script_week_request_valid() -> None:
     request = WeekRequest.model_validate(
         {
-            "city": "Le Havre",
-            "week_number": 29,
+            "project": "nuit-blanche",
+            "template": "nuit-blanche",
             "week": {
                 "label": "Semaine 29 – du 16/07/2026 au 22/07/2026",
-                "start_date": "2026-07-16",
-                "end_date": "2026-07-22",
+                "startDate": "2026-07-16",
+                "endDate": "2026-07-22",
+            },
+            "options": {
+                "statuses": ["Validé"],
+                "sort": ["date", "startTime", "venue"],
             },
             "events": [_base_event()],
         }
     )
-    assert request.week_number == 29
+    assert request.project == "nuit-blanche"
+    assert request.options.sort == ["date", "startTime", "venue"]
     assert len(request.events) == 1
 
 
@@ -66,29 +72,30 @@ def test_week_request_rejects_end_before_start() -> None:
     with pytest.raises(ValidationError):
         WeekRequest.model_validate(
             {
-                "city": "Le Havre",
-                "week_number": 29,
+                "project": "nuit-blanche",
+                "template": "nuit-blanche",
                 "week": {
                     "label": "Invalid week",
-                    "start_date": "2026-07-22",
-                    "end_date": "2026-07-16",
+                    "startDate": "2026-07-22",
+                    "endDate": "2026-07-16",
                 },
                 "events": [_base_event()],
             }
         )
 
 
-def test_week_request_rejects_out_of_range_week_number() -> None:
-    with pytest.raises(ValidationError):
-        WeekRequest.model_validate(
-            {
-                "city": "Le Havre",
-                "week_number": 54,
-                "week": {
-                    "label": "Semaine 54",
-                    "start_date": "2026-07-16",
-                    "end_date": "2026-07-22",
-                },
-                "events": [_base_event()],
-            }
+def test_event_blank_optional_strings_become_none_for_apps_script_fields() -> None:
+    event = EventIn.model_validate(
+        _base_event(
+            artists="   ",
+            price="",
+            visualUrl="  ",
+            sourceUrl=" ",
+            venueId="",
         )
+    )
+    assert event.artists is None
+    assert event.price is None
+    assert event.visual_url is None
+    assert event.source_url is None
+    assert event.venue_id is None

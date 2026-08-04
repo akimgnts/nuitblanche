@@ -21,6 +21,7 @@ from app.core.config import get_settings  # noqa: E402
 from app.models.generation import GenerationRepository  # noqa: E402
 from app.schemas.events import WeekRequest  # noqa: E402
 from app.services.generation_service import GenerationService  # noqa: E402
+from app.services.payload_adapter import to_generation_request  # noqa: E402
 from app.storage.local import LocalStorageProvider  # noqa: E402
 
 EXAMPLES_PATH = Path(__file__).resolve().parent.parent.parent / "examples" / "events.demo.json"
@@ -32,9 +33,10 @@ def main() -> int:
         return 1
 
     raw = json.loads(EXAMPLES_PATH.read_text(encoding="utf-8"))
-    request = WeekRequest.model_validate(raw)
+    payload = WeekRequest.model_validate(raw)
 
     settings = get_settings()
+    request = to_generation_request(payload, settings)
     storage = LocalStorageProvider(root_dir=settings.generated_dir)
     repository = GenerationRepository()
     service = GenerationService(settings=settings, storage=storage, repository=repository)

@@ -15,9 +15,10 @@ def _event(event_id: str, day: str) -> EventIn:
         {
             "id": event_id,
             "date": day,
+            "dateLabel": "Jeudi 16 juillet",
             "venue": "Venue",
             "type": "Concert",
-            "event_name": f"Title {event_id}",
+            "eventName": f"Title {event_id}",
         }
     )
 

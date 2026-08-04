@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="NUIT_BLANCHE_", env_file=".env", extra="ignore")
 
     api_key: str = Field(..., description="Shared secret expected in the X-API-Key header")
+    city: str = Field(default="Le Havre", description="City label injected into generated slides and metadata")
     max_payload_bytes: int = Field(default=2_000_000, description="Max size of an incoming JSON body")
     generation_timeout_seconds: int = Field(default=60, description="Hard timeout for one carousel generation")
     generated_dir: Path = Field(default=Path("generated"), description="Root directory for local storage output")

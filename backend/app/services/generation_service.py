@@ -20,7 +20,7 @@ from app.rendering.postprocess import finalize_png
 from app.rendering.renderer import render_slide
 from app.rendering.screenshot import ScreenshotRenderer
 from app.rendering.zipper import create_zip
-from app.schemas.events import WeekRequest
+from app.schemas.events import GenerationRequest
 from app.services.filenames import (
     cover_filename,
     day_slide_filename,
@@ -106,7 +106,7 @@ def _event_to_context(event: NormalizedEvent) -> dict[str, object]:
     }
 
 
-def _render_cover(request: WeekRequest, normalized_events: list[NormalizedEvent]) -> str:
+def _render_cover(request: GenerationRequest, normalized_events: list[NormalizedEvent]) -> str:
     return render_slide(
         "cover.html",
         {
@@ -123,7 +123,7 @@ def _render_cover(request: WeekRequest, normalized_events: list[NormalizedEvent]
     )
 
 
-def _render_day(request: WeekRequest, slide: DaySlide, page_label: str) -> str:
+def _render_day(request: GenerationRequest, slide: DaySlide, page_label: str) -> str:
     return render_slide(
         "day.html",
         {
@@ -140,7 +140,7 @@ def _render_day(request: WeekRequest, slide: DaySlide, page_label: str) -> str:
     )
 
 
-def _render_outro(request: WeekRequest, page_label: str) -> str:
+def _render_outro(request: GenerationRequest, page_label: str) -> str:
     return render_slide(
         "outro.html",
         {
@@ -170,7 +170,7 @@ class GenerationService:
         self._storage = storage
         self._repository = repository
 
-    def generate(self, request: WeekRequest) -> GenerationRecord:
+    def generate(self, request: GenerationRequest) -> GenerationRecord:
         generation_id = str(uuid.uuid4())
         warnings: list[str] = []
 

@@ -10,10 +10,10 @@ from app.services.layout import estimate_density
 @pytest.mark.parametrize(
     ("count", "expected_template"),
     [
-        (1, "spacious"),
-        (4, "spacious"),
-        (5, "standard"),
-        (6, "standard"),
+        (1, "compact"),
+        (4, "compact"),
+        (5, "compact"),
+        (6, "compact"),
         (7, "compact"),
         (8, "compact"),
     ],

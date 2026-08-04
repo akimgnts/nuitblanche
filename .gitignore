@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.egg-info/
 backend/.venv/
+backend/.venv312/
 
 # Environment
 .env
@@ -16,6 +17,9 @@ backend/generated/*
 .pytest_cache/
 htmlcov/
 .coverage
+backend/carousel.zip
+backend/carousel/
+backend/download
 
 # OS
 .DS_Store
