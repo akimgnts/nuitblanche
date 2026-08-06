@@ -2,12 +2,12 @@ services:
   api:
     build:
       context: ./backend
-    ports:
-      - "8000:8000"
+
     environment:
       NUIT_BLANCHE_API_KEY: ${NUIT_BLANCHE_API_KEY:-change-me}
       NUIT_BLANCHE_MAX_PAYLOAD_BYTES: ${NUIT_BLANCHE_MAX_PAYLOAD_BYTES:-2000000}
       NUIT_BLANCHE_GENERATION_TIMEOUT_SECONDS: ${NUIT_BLANCHE_GENERATION_TIMEOUT_SECONDS:-60}
       NUIT_BLANCHE_LOG_LEVEL: ${NUIT_BLANCHE_LOG_LEVEL:-INFO}
+
     volumes:
       - ./backend/generated:/app/generated
