@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import parse_qs, urlparse
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -46,3 +48,28 @@ def test_generate_with_correct_key_header_name_but_case_insensitive() -> None:
 def test_status_route_requires_api_key() -> None:
     response = client.get("/api/v1/carousels/unknown-id")
     assert response.status_code == 401
+
+
+def test_download_route_without_signature_is_forbidden_even_without_api_key() -> None:
+    response = client.get("/api/v1/carousels/unknown-id/download")
+    assert response.status_code == 404
+
+
+def test_download_route_with_valid_signature_does_not_require_api_key(
+    minimal_week_payload: dict[str, object],
+) -> None:
+    generate_response = client.post(
+        "/api/v1/carousels/generate",
+        json=minimal_week_payload,
+        headers={"X-API-Key": TEST_API_KEY},
+    )
+    assert generate_response.status_code == 200
+
+    download_url = generate_response.json()["download_url"]
+    parsed = urlparse(download_url)
+    query = parse_qs(parsed.query)
+
+    download_response = client.get(f"{parsed.path}?exp={query['exp'][0]}&sig={query['sig'][0]}")
+
+    assert download_response.status_code == 200
+    assert download_response.status_code != 401

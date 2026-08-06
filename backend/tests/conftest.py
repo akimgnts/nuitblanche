@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 
 os.environ.setdefault("NUIT_BLANCHE_API_KEY", "test-api-key")
+os.environ.setdefault("NUIT_BLANCHE_DOWNLOAD_URL_SECRET", "test-download-secret")
 os.environ.setdefault("NUIT_BLANCHE_GENERATION_TIMEOUT_SECONDS", "30")
 
 import pytest  # noqa: E402

@@ -32,6 +32,16 @@ class PayloadTooLargeError(NuitBlancheError):
     error_code = "payload_too_large"
 
 
+class InvalidDownloadSignatureError(NuitBlancheError):
+    status_code = status.HTTP_403_FORBIDDEN
+    error_code = "invalid_download_signature"
+
+
+class ExpiredDownloadSignatureError(NuitBlancheError):
+    status_code = status.HTTP_403_FORBIDDEN
+    error_code = "expired_download_signature"
+
+
 async def nuit_blanche_error_handler(request: Request, exc: NuitBlancheError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,

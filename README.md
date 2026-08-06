@@ -126,7 +126,9 @@ Voir `backend/.env.example`. Toutes préfixées `NUIT_BLANCHE_` :
 
 | Variable                                  | Rôle                                                   |
 |--------------------------------------------|---------------------------------------------------------|
-| `NUIT_BLANCHE_API_KEY`                      | Secret attendu dans le header `X-API-Key`. Obligatoire.  |
+| `NUIT_BLANCHE_API_KEY`                      | Secret attendu dans le header `X-API-Key` sur les routes protégées. Obligatoire.  |
+| `NUIT_BLANCHE_DOWNLOAD_URL_SECRET`          | Secret HMAC dédié pour signer les URL de téléchargement ouvertes dans le navigateur. |
+| `NUIT_BLANCHE_DOWNLOAD_URL_TTL_SECONDS`     | Durée de validité d'une URL signée de téléchargement (défaut 86400s / 24h). |
 | `NUIT_BLANCHE_MAX_PAYLOAD_BYTES`             | Taille max du corps JSON accepté (défaut ~2 Mo).          |
 | `NUIT_BLANCHE_GENERATION_TIMEOUT_SECONDS`     | Timeout d'une génération (défaut 60s).                    |
 | `NUIT_BLANCHE_GENERATED_DIR`                   | Dossier racine du stockage local.                         |
@@ -161,6 +163,17 @@ curl -X POST http://localhost:8000/api/v1/carousels/generate \
   --data @examples/events.demo.json
 ```
 
+La réponse contient désormais un `download_url` absolu de cette forme :
+
+```text
+https://votre-domaine/api/v1/carousels/<generation_id>/download?exp=<timestamp>&sig=<signature-hex>
+```
+
+Cette URL est directement ouvrable dans un navigateur sans header `X-API-Key`.
+Seule la route `POST /api/v1/carousels/generate` reste protégée pour lancer une
+génération ; la route de téléchargement ne devient publique qu'avec une
+signature HMAC valide et non expirée.
+
 ## 7. Tests
 
 ```bash
@@ -169,11 +182,12 @@ source .venv/bin/activate
 pytest
 ```
 
-46 tests couvrent : validation des événements, tri chronologique,
+Les tests couvrent : validation des événements, tri chronologique,
 groupement par jour, pagination, sélection de template selon la densité,
 génération des noms de fichiers, authentification API, la route de
-génération de bout en bout (vraie génération PNG + ZIP), et la création du
-ZIP. Aucun test ne dépend d'un vrai compte Google.
+génération de bout en bout (vraie génération PNG + ZIP), la signature des
+URL de téléchargement, et la création du ZIP. Aucun test ne dépend d'un vrai
+compte Google.
 
 ## 8. Installation future dans Google Sheets
 
@@ -222,8 +236,9 @@ l'URL publique obtenue.
 
 ## 11. Futur transfert du projet au client
 
-- Le client récupère la clé API (`NUIT_BLANCHE_API_KEY`) via un canal
-  sécurisé, jamais par email en clair.
+- Le client récupère la clé API (`NUIT_BLANCHE_API_KEY`) et le secret de
+  signature (`NUIT_BLANCHE_DOWNLOAD_URL_SECRET`) via un canal sécurisé,
+  jamais par email en clair.
 - Transférer l'accès au projet Apps Script (ou le dupliquer dans le Sheet
   du client) et au dépôt du moteur Python.
 - Documenter l'URL de production dans PARAMETRES avant la passation.
@@ -250,8 +265,9 @@ l'URL publique obtenue.
 - Moteur Python complet : validation, normalisation, tri, groupement,
   pagination, choix de template, rendu Jinja2 → Playwright → PNG 1080×1350,
   ZIP, API FastAPI (`/health`, `/version`, génération, statut,
-  téléchargement), authentification par clé API, limite de taille de
-  payload, timeout de génération, 46 tests pytest verts.
+  téléchargement), authentification par clé API sur les routes protégées,
+  URL de téléchargement signées, limite de taille de payload, timeout de
+  génération, suite pytest verte.
 - `LocalStorageProvider` (stockage réel sur disque).
 - Script de démonstration (`generate_demo.py`) — produit réellement des
   PNG et un ZIP, vérifié dans ce dépôt.
