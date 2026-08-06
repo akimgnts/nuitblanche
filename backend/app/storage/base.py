@@ -20,8 +20,17 @@ class StoredGeneration:
     location: str
     """Human-meaningful location: a local path, or a Drive folder URL."""
 
-    file_paths: list[Path]
-    """Local filesystem paths to the files, used for the download route."""
+    output_dir: Path
+    """Root directory for this generation's stored artifacts."""
+
+    slide_paths: list[Path]
+    """Local filesystem paths to the generated PNG slides."""
+
+    manifest_path: Path
+    """Local filesystem path to the manifest JSON."""
+
+    zip_path: Path
+    """Local filesystem path to the optional ZIP download."""
 
 
 class StorageProvider(ABC):
@@ -29,11 +38,13 @@ class StorageProvider(ABC):
     def store(
         self,
         *,
+        generation_id: str,
         city: str,
         week_number: int,
         year: int,
         png_paths: list[Path],
+        manifest_path: Path,
         zip_path: Path,
     ) -> StoredGeneration:
-        """Persist the generated slides + zip and return where they ended up."""
+        """Persist the generated slides + manifest + zip and return where they ended up."""
         raise NotImplementedError

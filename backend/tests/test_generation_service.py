@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from app.core.config import Settings
@@ -53,4 +54,18 @@ def test_generation_service_preserves_existing_output_shape(tmp_path: Path) -> N
 
     assert record.slide_count == 3
     assert record.files == ["01-cover.png", "02-jeudi.png", "03-fin.png"]
+    assert record.output_dir.name == record.generation_id
+    assert [path.name for path in record.slide_paths] == record.files
+    assert record.manifest_path.exists()
     assert record.zip_path.exists()
+    manifest = json.loads(record.manifest_path.read_text(encoding="utf-8"))
+    assert manifest == {
+        "generation_id": record.generation_id,
+        "week": "Semaine 29 – du 16/07/2026 au 22/07/2026",
+        "slide_count": 3,
+        "slides": [
+            {"index": 1, "filename": "01-cover.png"},
+            {"index": 2, "filename": "02-jeudi.png"},
+            {"index": 3, "filename": "03-fin.png"},
+        ],
+    }

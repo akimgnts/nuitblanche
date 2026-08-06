@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import io
-from urllib.parse import parse_qs, urlparse
+import json
 import time
 import zipfile
 from pathlib import Path
 from typing import Iterator
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from fastapi.testclient import TestClient
@@ -59,21 +60,55 @@ def _auth_headers() -> dict[str, str]:
     return {"X-API-Key": get_settings().api_key}
 
 
+def _query_params(url: str) -> dict[str, list[str]]:
+    return parse_qs(urlparse(url).query)
+
+
 def test_generate_returns_expected_shape(client: TestClient, minimal_week_payload: dict[str, object]) -> None:
     response = client.post("/api/v1/carousels/generate", json=minimal_week_payload, headers=_auth_headers())
 
     assert response.status_code == 200
     body = response.json()
+    assert body["success"] is True
     assert body["status"] == "completed"
     assert body["slide_count"] == 3  # cover + 1 day + outro
     assert body["files"] == ["01-cover.png", "02-jeudi.png", "03-fin.png"]
+    assert isinstance(body["files"], list)
     parsed = urlparse(body["download_url"])
-    query = parse_qs(parsed.query)
+    query = _query_params(body["download_url"])
     assert parsed.scheme == "http"
     assert parsed.netloc == "testserver"
     assert parsed.path == f"/api/v1/carousels/{body['generation_id']}/download"
     assert "exp" in query
     assert "sig" in query
+    assert body["zip_download_url"] == body["download_url"]
+    manifest_parsed = urlparse(body["manifest_url"])
+    assert manifest_parsed.path == f"/api/v1/carousels/{body['generation_id']}/files/manifest.json"
+    assert "exp" in _query_params(body["manifest_url"])
+    assert body["file_downloads"] == [
+        {
+            "index": 1,
+            "name": "01-cover.png",
+            "download_url": body["file_downloads"][0]["download_url"],
+        },
+        {
+            "index": 2,
+            "name": "02-jeudi.png",
+            "download_url": body["file_downloads"][1]["download_url"],
+        },
+        {
+            "index": 3,
+            "name": "03-fin.png",
+            "download_url": body["file_downloads"][2]["download_url"],
+        },
+    ]
+    for expected_index, expected_name, file_download in zip((1, 2, 3), body["files"], body["file_downloads"]):
+        assert file_download["index"] == expected_index
+        assert file_download["name"] == expected_name
+        file_url = urlparse(file_download["download_url"])
+        assert file_url.path == f"/api/v1/carousels/{body['generation_id']}/files/{expected_name}"
+        assert "exp" in _query_params(file_download["download_url"])
+        assert "sig" in _query_params(file_download["download_url"])
     assert body["warnings"] == []
 
 
@@ -186,6 +221,43 @@ def test_download_route_404_for_unknown_id(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_manifest_is_generated_and_downloadable(
+    client: TestClient, minimal_week_payload: dict[str, object]
+) -> None:
+    generate_response = client.post(
+        "/api/v1/carousels/generate", json=minimal_week_payload, headers=_auth_headers()
+    )
+    manifest_url = generate_response.json()["manifest_url"]
+
+    manifest_response = client.get(manifest_url)
+
+    assert manifest_response.status_code == 200
+    manifest = json.loads(manifest_response.text)
+    assert manifest["generation_id"] == generate_response.json()["generation_id"]
+    assert manifest["week"] == "Semaine 29 – du 16/07/2026 au 22/07/2026"
+    assert manifest["slide_count"] == 3
+    assert manifest["slides"] == [
+        {"index": 1, "filename": "01-cover.png"},
+        {"index": 2, "filename": "02-jeudi.png"},
+        {"index": 3, "filename": "03-fin.png"},
+    ]
+
+
+def test_png_download_route_returns_a_valid_png(
+    client: TestClient, minimal_week_payload: dict[str, object]
+) -> None:
+    generate_response = client.post(
+        "/api/v1/carousels/generate", json=minimal_week_payload, headers=_auth_headers()
+    )
+    png_url = generate_response.json()["file_downloads"][0]["download_url"]
+
+    png_response = client.get(png_url)
+
+    assert png_response.status_code == 200
+    assert png_response.headers["content-type"] == "image/png"
+    assert png_response.content.startswith(b"\x89PNG")
+
+
 def test_download_route_rejects_missing_signature(
     client: TestClient, minimal_week_payload: dict[str, object]
 ) -> None:
@@ -195,6 +267,21 @@ def test_download_route_rejects_missing_signature(
     generation_id = generate_response.json()["generation_id"]
 
     response = client.get(f"/api/v1/carousels/{generation_id}/download")
+
+    assert response.status_code == 403
+
+
+def test_file_download_route_rejects_invalid_signature(
+    client: TestClient, minimal_week_payload: dict[str, object]
+) -> None:
+    generate_response = client.post(
+        "/api/v1/carousels/generate", json=minimal_week_payload, headers=_auth_headers()
+    )
+    file_url = generate_response.json()["file_downloads"][0]["download_url"]
+    parsed = urlparse(file_url)
+    query = _query_params(file_url)
+
+    response = client.get(f"{parsed.path}?exp={query['exp'][0]}&sig=invalid")
 
     assert response.status_code == 403
 
@@ -211,6 +298,27 @@ def test_download_route_rejects_invalid_signature(
     invalid_url = f"{parsed.path}?exp={query['exp'][0]}&sig=invalid"
 
     response = client.get(invalid_url)
+
+    assert response.status_code == 403
+
+
+def test_file_download_route_rejects_expired_signature(
+    client: TestClient, minimal_week_payload: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("NUIT_BLANCHE_DOWNLOAD_URL_TTL_SECONDS", "-1")
+    get_settings.cache_clear()
+    expired_settings = get_settings()
+    app.dependency_overrides[get_settings] = lambda: expired_settings
+    try:
+        generate_response = client.post(
+            "/api/v1/carousels/generate", json=minimal_week_payload, headers=_auth_headers()
+        )
+        file_url = generate_response.json()["file_downloads"][0]["download_url"]
+        response = client.get(file_url)
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
+        monkeypatch.delenv("NUIT_BLANCHE_DOWNLOAD_URL_TTL_SECONDS", raising=False)
+        get_settings.cache_clear()
 
     assert response.status_code == 403
 
@@ -234,6 +342,32 @@ def test_download_route_rejects_expired_signature(
         get_settings.cache_clear()
 
     assert response.status_code == 403
+
+
+def test_file_download_route_404_for_missing_file(
+    client: TestClient, minimal_week_payload: dict[str, object]
+) -> None:
+    generate_response = client.post(
+        "/api/v1/carousels/generate", json=minimal_week_payload, headers=_auth_headers()
+    )
+    generation_id = generate_response.json()["generation_id"]
+
+    response = client.get(f"/api/v1/carousels/{generation_id}/files/99-missing.png?exp=1&sig=invalid")
+
+    assert response.status_code == 404
+
+
+def test_file_download_route_rejects_path_traversal(
+    client: TestClient, minimal_week_payload: dict[str, object]
+) -> None:
+    generate_response = client.post(
+        "/api/v1/carousels/generate", json=minimal_week_payload, headers=_auth_headers()
+    )
+    generation_id = generate_response.json()["generation_id"]
+
+    response = client.get(f"/api/v1/carousels/{generation_id}/files/../secret.txt?exp=1&sig=invalid")
+
+    assert response.status_code == 404
 
 
 def test_generate_times_out_returns_504(minimal_week_payload: dict[str, object]) -> None:

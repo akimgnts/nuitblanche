@@ -374,9 +374,24 @@ Wrapper Playwright:
 
 ### StorageProvider
 Interface abstraite:
-- `store(city, week_number, year, png_paths, zip_path)` → StoredResult
+- `store(generation_id, city, week_number, year, png_paths, manifest_path, zip_path)` → StoredResult
 
 **Implémentation**: `LocalStorageProvider` (filesystem)
+
+### Sortie stockée
+
+Chaque génération est persistée dans son propre dossier :
+
+```text
+generated/
+  <generation_id>/
+    manifest.json
+    01-cover.png
+    02-jeudi.png
+    03-vendredi.png
+    ...
+    nuit-blanche-semaine-29.zip
+```
 
 ## Route API
 
@@ -387,17 +402,37 @@ Body: WeekRequest JSON
 
 Response 200:
 {
+  "success": true,
   "generation_id": "uuid",
   "status": "completed",
   "slide_count": 15,
-  "download_url": "/api/v1/carousels/{uuid}/download",
+  "download_url": "https://.../api/v1/carousels/{uuid}/download?exp=...&sig=...",
+  "zip_download_url": "https://.../api/v1/carousels/{uuid}/download?exp=...&sig=...",
+  "manifest_url": "https://.../api/v1/carousels/{uuid}/files/manifest.json?exp=...&sig=...",
   "files": ["01-cover.png", "02-jeudi.png", ...],
+  "file_downloads": [
+    {
+      "index": 1,
+      "name": "01-cover.png",
+      "download_url": "https://.../api/v1/carousels/{uuid}/files/01-cover.png?exp=...&sig=..."
+    }
+  ],
   "warnings": []
 }
 
 Response 504: Timeout (>settings.generation_timeout_seconds)
 Response 422: Validation error
 ```
+
+Routes publiques signées :
+
+```text
+GET /api/v1/carousels/{generation_id}/download
+GET /api/v1/carousels/{generation_id}/files/{filename}
+```
+
+Les deux exigent une signature HMAC valide (`exp`, `sig`) mais pas de
+header `X-API-Key`.
 
 ## Configuration
 
@@ -463,16 +498,27 @@ record = service.generate(request)
 
 # 3. Response
 {
+    "success": true,
     "generation_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "status": "completed",
     "slide_count": 4,
-    "download_url": "/api/v1/carousels/a1b2c3d4.../download",
+    "download_url": "https://.../download?exp=...&sig=...",
+    "zip_download_url": "https://.../download?exp=...&sig=...",
+    "manifest_url": "https://.../files/manifest.json?exp=...&sig=...",
     "files": ["01-cover.png", "02-jeudi.png", "03-vendredi.png", "04-outro.png"],
+    "file_downloads": [
+        {
+            "index": 1,
+            "name": "01-cover.png",
+            "download_url": "https://.../files/01-cover.png?exp=...&sig=..."
+        }
+    ],
     "warnings": []
 }
 
-# 4. ZIP disponible pour téléchargement
-# Contient toutes les PNG + index JSON (optionnel)
+# 4. Les PNG sont disponibles individuellement
+# 5. Le manifest.json est téléchargeable
+# 6. Le ZIP reste disponible pour compatibilité
 ```
 
 ## Tests
@@ -485,7 +531,7 @@ record = service.generate(request)
 
 **Integration test**: `test_generate_route.py`
 - Request → Response complet
-- Vérification ZIP, PNG filenames, metadata
+- Vérification ZIP, PNG filenames, manifest, URLs signées, compatibilité
 
 ## Déploiement
 

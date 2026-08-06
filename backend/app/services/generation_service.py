@@ -6,6 +6,7 @@ paginate -> render -> screenshot -> post-process -> zip -> store.
 
 from __future__ import annotations
 
+import json
 import re
 import tempfile
 import unicodedata
@@ -40,6 +41,7 @@ _FRENCH_MONTHS = (
 )
 
 MAX_COVER_TAGS = 4
+MANIFEST_FILENAME = "manifest.json"
 
 
 def _format_day_month(day: Date) -> str:
@@ -157,6 +159,29 @@ def _render_outro(request: GenerationRequest, page_label: str) -> str:
     )
 
 
+def _write_manifest(
+    *,
+    generation_id: str,
+    week_label: str,
+    png_paths: list[Path],
+    output_path: Path,
+) -> Path:
+    manifest = {
+        "generation_id": generation_id,
+        "week": week_label,
+        "slide_count": len(png_paths),
+        "slides": [
+            {
+                "index": index,
+                "filename": path.name,
+            }
+            for index, path in enumerate(png_paths, start=1)
+        ],
+    }
+    output_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    return output_path
+
+
 class GenerationService:
     """Stateless orchestrator: all state lives in the repository/storage it's given."""
 
@@ -212,29 +237,37 @@ class GenerationService:
                 finalize_png(outro_path, width, height)
                 png_paths.append(outro_path)
 
+            manifest_path = _write_manifest(
+                generation_id=generation_id,
+                week_label=request.week.label,
+                png_paths=png_paths,
+                output_path=tmp_dir / MANIFEST_FILENAME,
+            )
             zip_path = tmp_dir / zip_filename(request.week_number)
             create_zip(png_paths, zip_path)
 
             stored = self._storage.store(
+                generation_id=generation_id,
                 city=request.city,
                 week_number=request.week_number,
                 year=request.week.start_date.year,
                 png_paths=png_paths,
+                manifest_path=manifest_path,
                 zip_path=zip_path,
             )
 
-        stored_zip_path = next(path for path in stored.file_paths if path.name == zip_path.name)
-        stored_png_paths = [path for path in stored.file_paths if path.name != zip_path.name]
-
         record = GenerationRecord(
             generation_id=generation_id,
+            week=request.week.label,
             city=request.city,
             week_number=request.week_number,
             status="completed",
-            slide_count=len(png_paths),
-            files=[path.name for path in stored_png_paths],
-            output_dir=stored_zip_path.parent,
-            zip_path=stored_zip_path,
+            slide_count=len(stored.slide_paths),
+            files=[path.name for path in stored.slide_paths],
+            output_dir=stored.output_dir,
+            slide_paths=stored.slide_paths,
+            manifest_path=stored.manifest_path,
+            zip_path=stored.zip_path,
             warnings=warnings,
         )
         self._repository.add(record)

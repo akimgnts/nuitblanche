@@ -151,8 +151,8 @@ source .venv/bin/activate
 python -m scripts.generate_demo
 ```
 
-Ou : `make demo`. Les PNG et le ZIP sont écrits dans
-`backend/generated/<année>/Semaine <n>/`.
+Ou : `make demo`. Les PNG, le `manifest.json` et le ZIP sont écrits dans
+`backend/generated/<generation_id>/`.
 
 Avec l'API démarrée, la même génération est aussi disponible en HTTP :
 
@@ -163,7 +163,16 @@ curl -X POST http://localhost:8000/api/v1/carousels/generate \
   --data @examples/events.demo.json
 ```
 
-La réponse contient désormais un `download_url` absolu de cette forme :
+La réponse conserve l'ancien contrat Apps Script et ajoute un contrat
+orienté fichiers individuels. Elle contient notamment :
+
+- `download_url` : ancien lien ZIP signé, conservé
+- `files` : ancienne liste de noms PNG, conservée
+- `file_downloads` : nouvelles URLs signées par PNG
+- `manifest_url` : URL signée du `manifest.json`
+- `zip_download_url` : alias explicite du lien ZIP signé
+
+Les URLs absolues ont cette forme :
 
 ```text
 https://votre-domaine/api/v1/carousels/<generation_id>/download?exp=<timestamp>&sig=<signature-hex>
@@ -173,6 +182,12 @@ Cette URL est directement ouvrable dans un navigateur sans header `X-API-Key`.
 Seule la route `POST /api/v1/carousels/generate` reste protégée pour lancer une
 génération ; la route de téléchargement ne devient publique qu'avec une
 signature HMAC valide et non expirée.
+
+Les téléchargements PNG individuels utilisent cette route :
+
+```text
+https://votre-domaine/api/v1/carousels/<generation_id>/files/<filename>?exp=<timestamp>&sig=<signature-hex>
+```
 
 ## 7. Tests
 
@@ -185,9 +200,9 @@ pytest
 Les tests couvrent : validation des événements, tri chronologique,
 groupement par jour, pagination, sélection de template selon la densité,
 génération des noms de fichiers, authentification API, la route de
-génération de bout en bout (vraie génération PNG + ZIP), la signature des
-URL de téléchargement, et la création du ZIP. Aucun test ne dépend d'un vrai
-compte Google.
+génération de bout en bout (vrais PNG + `manifest.json` + ZIP), la
+signature des URL de téléchargement par ZIP et par fichier, et la création
+du ZIP. Aucun test ne dépend d'un vrai compte Google.
 
 ## 8. Installation future dans Google Sheets
 
@@ -264,9 +279,10 @@ l'URL publique obtenue.
 
 - Moteur Python complet : validation, normalisation, tri, groupement,
   pagination, choix de template, rendu Jinja2 → Playwright → PNG 1080×1350,
-  ZIP, API FastAPI (`/health`, `/version`, génération, statut,
-  téléchargement), authentification par clé API sur les routes protégées,
-  URL de téléchargement signées, limite de taille de payload, timeout de
+  stockage individuel des slides, `manifest.json`, ZIP de compatibilité,
+  API FastAPI (`/health`, `/version`, génération, statut, téléchargement),
+  authentification par clé API sur les routes protégées, URL de
+  téléchargement signées, limite de taille de payload, timeout de
   génération, suite pytest verte.
 - `LocalStorageProvider` (stockage réel sur disque).
 - Script de démonstration (`generate_demo.py`) — produit réellement des

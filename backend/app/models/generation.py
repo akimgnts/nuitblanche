@@ -15,14 +15,23 @@ from threading import Lock
 @dataclass(frozen=True)
 class GenerationRecord:
     generation_id: str
+    week: str
     city: str
     week_number: int
     status: str
     slide_count: int
     files: list[str]
     output_dir: Path
+    slide_paths: list[Path]
+    manifest_path: Path
     zip_path: Path
     warnings: list[str] = field(default_factory=list)
+
+    def slide_path_for(self, filename: str) -> Path | None:
+        for path in self.slide_paths:
+            if path.name == filename:
+                return path
+        return None
 
 
 class GenerationRepository:
