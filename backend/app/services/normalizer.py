@@ -19,6 +19,14 @@ ARTIST_DISPLAY_MAX_LENGTH = 50
 DESCRIPTION_DISPLAY_MAX_LENGTH = 140
 POSTER_LABEL_MAX_LENGTH = 34
 NO_PRICE_LABEL = "Tarif non communiqué"
+DRIVE_IMAGE_URL_TEMPLATE = "https://drive.google.com/uc?export=view&id={media_id}"
+
+
+def resolve_poster_url(event: EventIn) -> str | None:
+    """Prefer Drive media IDs, fall back to the legacy visual URL."""
+    if event.media_id:
+        return DRIVE_IMAGE_URL_TEMPLATE.format(media_id=event.media_id)
+    return event.visual_url
 
 
 @dataclass(frozen=True)
@@ -57,7 +65,7 @@ def normalize_event(event: EventIn) -> NormalizedEvent:
         description=None,
         description_display=None,
         price_display=event.price.strip() if event.price and event.price.strip() else NO_PRICE_LABEL,
-        poster_url=event.visual_url,
+        poster_url=resolve_poster_url(event),
         placeholder_color=placeholder_color(event.type),
         poster_label=truncate_text(event.event_name, POSTER_LABEL_MAX_LENGTH),
         featured=event.featured,

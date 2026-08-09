@@ -31,6 +31,7 @@ def test_event_optional_fields_default_to_none() -> None:
     event = EventIn.model_validate(_base_event())
     assert event.artists is None
     assert event.price is None
+    assert event.media_id is None
     assert event.visual_url is None
     assert event.featured is False
 
@@ -89,6 +90,7 @@ def test_event_blank_optional_strings_become_none_for_apps_script_fields() -> No
         _base_event(
             artists="   ",
             price="",
+            mediaId="  ",
             visualUrl="  ",
             sourceUrl=" ",
             venueId="",
@@ -96,6 +98,7 @@ def test_event_blank_optional_strings_become_none_for_apps_script_fields() -> No
     )
     assert event.artists is None
     assert event.price is None
+    assert event.media_id is None
     assert event.visual_url is None
     assert event.source_url is None
     assert event.venue_id is None

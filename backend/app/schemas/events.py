@@ -25,6 +25,7 @@ class EventIn(BaseModel):
     start_time: Time | None = Field(default=None, alias="startTime")
     end_time: Time | None = Field(default=None, alias="endTime")
     price: str | None = Field(default=None, max_length=100)
+    media_id: str | None = Field(default=None, alias="mediaId", max_length=200)
     visual_url: str | None = Field(default=None, alias="visualUrl", max_length=2000)
     featured: bool = False
     status: str | None = Field(default=None, max_length=50)
@@ -37,7 +38,7 @@ class EventIn(BaseModel):
             return value.strip()
         return value
 
-    @field_validator("artists", "price", "visual_url", "source_url", "venue_id", mode="before")
+    @field_validator("artists", "price", "media_id", "visual_url", "source_url", "venue_id", mode="before")
     @classmethod
     def _blank_to_none(cls, value: object) -> object:
         if isinstance(value, str) and value.strip() == "":

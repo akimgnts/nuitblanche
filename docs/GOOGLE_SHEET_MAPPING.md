@@ -37,6 +37,7 @@ Exemple donné dans le brief initial :
   "NOM_EVENEMENT": "event_name",
   "ARTISTES_PROGRAMMATION": "artists",
   "PRIX_FINAL": "price",
+  "MEDIA_ID": "media_id",
   "VISUEL_DRIVE_URL": "visual_url",
   "SOURCE_URL": "source_url",
   "MISE_EN_AVANT": "featured",
@@ -63,7 +64,8 @@ schéma Pydantic évolue.
 | `event_name`   | oui         | texte                                | Titre affiché (raccourci automatiquement si trop long). |
 | `artists`      | non         | texte                                | Artistes, DJ, groupes ou intervenants. |
 | `price`        | non         | texte libre (ex. `"12€"`, `"Gratuit"`) | Utiliser `PRIX_FINAL` du Sheet. Si absent : `"Tarif non communiqué"` sur le visuel. |
-| `visual_url`   | non         | URL                                  | URL de l'affiche sur Drive. Si absent : placeholder généré automatiquement. |
+| `media_id`     | non         | texte                                | Identifiant Drive brut. Si présent, le backend reconstruit lui-même l'URL d'image Google Drive. |
+| `visual_url`   | non         | URL                                  | Ancien fallback compatible. Utilisé seulement si `media_id` est absent. Si les deux sont absents : placeholder généré automatiquement. |
 | `source_url`   | non         | URL                                  | Instagram, billetterie ou site source (informatif, non affiché). |
 | `featured`     | non         | booléen                              | Priorité éditoriale (`MISE_EN_AVANT`). `"oui"` / `"true"` / `"1"` / case cochée → `true`. |
 | `status`       | non         | texte                                | Statut de l'événement (`Validé`, `Brouillon`, `À vérifier`). Apps Script filtre avant envoi. |
@@ -79,7 +81,10 @@ schéma Pydantic évolue.
    filtrer par colonne "Ville").
 5. Lancer **Nuit Blanche → Générer le carrousel maintenant** une première
    fois pour valider le mapping sur des données réelles.
-6. Si des colonnes n'existent pas encore côté Sheet (ex. affiche, tarif),
+6. Pour les affiches, privilégier désormais `MEDIA_ID` dans le Sheet.
+   `VISUEL_DRIVE_URL` peut rester temporairement pour compatibilité avec
+   les anciens événements, mais le backend donne priorité à `media_id`.
+7. Si des colonnes n'existent pas encore côté Sheet (ex. affiche, tarif),
    elles peuvent rester non mappées : ces champs sont optionnels côté API.
 
 ## Ce qui ne change jamais
