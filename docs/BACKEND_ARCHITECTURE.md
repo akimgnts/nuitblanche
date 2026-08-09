@@ -369,6 +369,7 @@ Construction des slides jour + pagination logique
 ### ScreenshotRenderer
 Wrapper Playwright:
 - Launch chromium
+- Wait fonts + visible remote images before capture
 - Capture HTML
 - Save PNG
 
