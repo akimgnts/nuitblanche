@@ -370,6 +370,29 @@ def test_file_download_route_rejects_path_traversal(
     assert response.status_code == 404
 
 
+def test_generate_continues_when_poster_download_fails(
+    client: TestClient, minimal_week_payload: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "app.services.poster_assets.urlopen",
+        lambda *args, **kwargs: (_ for _ in ()).throw(TimeoutError("boom")),
+    )
+    payload = {
+        **minimal_week_payload,
+        "events": [
+            {
+                **minimal_week_payload["events"][0],
+                "visualUrl": "https://example.com/poster.png",
+            }
+        ],
+    }
+
+    response = client.post("/api/v1/carousels/generate", json=payload, headers=_auth_headers())
+
+    assert response.status_code == 200
+    assert response.json()["files"] == ["01-cover.png", "02-jeudi.png", "03-fin.png"]
+
+
 def test_generate_times_out_returns_504(minimal_week_payload: dict[str, object]) -> None:
     class SlowService:
         def generate(self, request: object) -> None:

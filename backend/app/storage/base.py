@@ -23,6 +23,9 @@ class StoredGeneration:
     output_dir: Path
     """Root directory for this generation's stored artifacts."""
 
+    assets_dir: Path
+    """Directory containing downloaded poster assets for this generation."""
+
     slide_paths: list[Path]
     """Local filesystem paths to the generated PNG slides."""
 
@@ -43,6 +46,7 @@ class StorageProvider(ABC):
         week_number: int,
         year: int,
         png_paths: list[Path],
+        assets_dir: Path,
         manifest_path: Path,
         zip_path: Path,
     ) -> StoredGeneration:

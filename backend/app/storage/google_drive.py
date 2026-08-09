@@ -44,10 +44,11 @@ class GoogleDriveStorageProvider(StorageProvider):
         week_number: int,
         year: int,
         png_paths: list[Path],
+        assets_dir: Path,
         manifest_path: Path,
         zip_path: Path,
     ) -> StoredGeneration:
-        del generation_id, city, week_number, year, png_paths, manifest_path, zip_path
+        del generation_id, city, week_number, year, png_paths, assets_dir, manifest_path, zip_path
         raise NotImplementedError(
             "GoogleDriveStorageProvider is a stub. See module docstring for what's "
             "needed to implement it, then wire it in via app/core/config.py."

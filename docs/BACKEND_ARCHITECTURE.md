@@ -127,8 +127,8 @@ class NormalizedEvent:
     title_display: str      # tronqué si >60 chars
     artist: str | None      # mappé de `artists`
     artist_display: str     # tronqué si >50 chars
-    price_display: str      # "Tarif non communiqué" si absent
-    poster_url: str | None  # mappé de `visual_url`
+    price_display: str      # valeur de `price`, sinon "Tarif non communiqué"
+    poster_url: str | None  # data: URL locale après téléchargement backend
     placeholder_color: str  # basé sur `category`
     poster_label: str       # tronqué si >34 chars
     featured: bool
@@ -372,6 +372,21 @@ Wrapper Playwright:
 - Wait fonts + visible remote images before capture
 - Capture HTML
 - Save PNG
+
+### Poster assets
+
+Les affiches ne sont plus chargées depuis Google Drive par Playwright.
+Le backend :
+
+1. résout `mediaId` / `visualUrl`
+2. télécharge l'image côté Python
+3. valide `HTTP 200` + `Content-Type image/*`
+4. stocke le fichier dans `generated/<generation_id>/assets/`
+5. convertit le fichier en `data:` URL
+6. injecte cette valeur dans `poster_url` pour le template
+
+En cas d'échec, le backend logge `event_id`, `url`, `status`,
+`content_type` et garde le fallback visuel existant.
 
 ### StorageProvider
 Interface abstraite:

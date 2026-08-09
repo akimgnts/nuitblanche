@@ -22,18 +22,25 @@ class LocalStorageProvider(StorageProvider):
         week_number: int,
         year: int,
         png_paths: list[Path],
+        assets_dir: Path,
         manifest_path: Path,
         zip_path: Path,
     ) -> StoredGeneration:
         del city, week_number, year
         target_dir = self._root_dir / generation_id
         target_dir.mkdir(parents=True, exist_ok=True)
+        target_assets_dir = target_dir / "assets"
+        target_assets_dir.mkdir(parents=True, exist_ok=True)
 
         stored_slide_paths: list[Path] = []
         for source in png_paths:
             destination = target_dir / source.name
             shutil.copy2(source, destination)
             stored_slide_paths.append(destination)
+
+        for source in assets_dir.iterdir():
+            if source.is_file():
+                shutil.copy2(source, target_assets_dir / source.name)
 
         stored_manifest_path = target_dir / manifest_path.name
         shutil.copy2(manifest_path, stored_manifest_path)
@@ -44,6 +51,7 @@ class LocalStorageProvider(StorageProvider):
         return StoredGeneration(
             location=str(target_dir),
             output_dir=target_dir,
+            assets_dir=target_assets_dir,
             slide_paths=stored_slide_paths,
             manifest_path=stored_manifest_path,
             zip_path=stored_zip_path,

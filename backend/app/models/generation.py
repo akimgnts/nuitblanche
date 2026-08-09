@@ -22,6 +22,7 @@ class GenerationRecord:
     slide_count: int
     files: list[str]
     output_dir: Path
+    assets_dir: Path
     slide_paths: list[Path]
     manifest_path: Path
     zip_path: Path

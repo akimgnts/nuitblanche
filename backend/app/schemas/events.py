@@ -38,7 +38,16 @@ class EventIn(BaseModel):
             return value.strip()
         return value
 
-    @field_validator("artists", "price", "media_id", "visual_url", "source_url", "venue_id", mode="before")
+    @field_validator("price", mode="before")
+    @classmethod
+    def _normalize_price(cls, value: object) -> object:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return None if value.strip() == "" else value
+        return str(value)
+
+    @field_validator("artists", "media_id", "visual_url", "source_url", "venue_id", mode="before")
     @classmethod
     def _blank_to_none(cls, value: object) -> object:
         if isinstance(value, str) and value.strip() == "":

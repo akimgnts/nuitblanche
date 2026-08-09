@@ -11,6 +11,7 @@ import re
 import tempfile
 import unicodedata
 import uuid
+from dataclasses import replace
 from datetime import date as Date
 from datetime import time as Time
 from pathlib import Path
@@ -32,6 +33,7 @@ from app.services.filenames import (
 from app.services.grouping import group_by_day
 from app.services.layout import DaySlide, build_day_slides
 from app.services.normalizer import NormalizedEvent, normalize_events
+from app.services.poster_assets import localize_poster_assets
 from app.services.sorting import sort_events
 from app.storage.base import StorageProvider
 
@@ -213,14 +215,28 @@ class GenerationService:
         with tempfile.TemporaryDirectory(prefix=f"nuit-blanche-{generation_id}-") as tmp_dir_name:
             tmp_dir = Path(tmp_dir_name)
             png_paths: list[Path] = []
+            assets_dir = tmp_dir / "assets"
+            localized_events = localize_poster_assets(
+                normalized,
+                generation_id=generation_id,
+                assets_dir=assets_dir,
+            )
+            localized_by_id = {event.external_id: event for event in localized_events}
+            localized_day_slides = [
+                replace(
+                    slide,
+                    events=[localized_by_id[event.external_id] for event in slide.events],
+                )
+                for slide in day_slides
+            ]
 
             with ScreenshotRenderer(width, height, self._settings.chromium_executable_path) as screenshot:
                 cover_path = tmp_dir / cover_filename()
-                screenshot.capture(_render_cover(request, normalized), cover_path)
+                screenshot.capture(_render_cover(request, localized_events), cover_path)
                 finalize_png(cover_path, width, height)
                 png_paths.append(cover_path)
 
-                for index, slide in enumerate(day_slides, start=2):
+                for index, slide in enumerate(localized_day_slides, start=2):
                     day_name = weekday_name(slide.day)
                     if slide.page_count > 1:
                         page_label = f"{day_name.capitalize()} {slide.page_number}/{slide.page_count}"
@@ -252,6 +268,7 @@ class GenerationService:
                 week_number=request.week_number,
                 year=request.week.start_date.year,
                 png_paths=png_paths,
+                assets_dir=assets_dir,
                 manifest_path=manifest_path,
                 zip_path=zip_path,
             )
@@ -265,6 +282,7 @@ class GenerationService:
             slide_count=len(stored.slide_paths),
             files=[path.name for path in stored.slide_paths],
             output_dir=stored.output_dir,
+            assets_dir=stored.assets_dir,
             slide_paths=stored.slide_paths,
             manifest_path=stored.manifest_path,
             zip_path=stored.zip_path,
